@@ -24,6 +24,11 @@ export const RECORDATORIOS: MesRecordatorios[] = [
         fecha: "Finales de octubre",
         detalle: "Fecha por confirmar",
       },
+      {
+        titulo: "Cita en la policía (renovar DNI y pasaporte)",
+        fecha: "28 oct",
+        detalle: "11:48",
+      },
     ],
   },
   {

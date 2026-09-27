@@ -12,6 +12,7 @@ import { COLEGIO, HORARIO_SEMANAL } from "@/data/horario";
 import {
   aplicanExtraescolares,
   bloquesDelDia,
+  diaActivoNatacion,
   esJornadaCorta,
   estadoAhora,
   type Bloque,
@@ -98,8 +99,9 @@ function TarjetaAhora({ now }: { now: Date | null }) {
 }
 
 function ListaSemanal({ now }: { now: Date | null }) {
-  // Mes de referencia para las reglas (sept/junio/otros). Hasta hidratar, usamos octubre–mayo.
-  const mes0 = now ? now.getMonth() : 9;
+  // Fecha de referencia para las reglas (sept/junio/otros, día de natación). Hasta hidratar, usamos octubre.
+  const fecha = now ?? new Date(2026, 9, 1);
+  const mes0 = fecha.getMonth();
   const hoyDia = now ? now.getDay() : 0;
   const [abierto, setAbierto] = useState<string>("");
   useEffect(() => {
@@ -125,8 +127,9 @@ function ListaSemanal({ now }: { now: Date | null }) {
       <Accordion type="single" collapsible value={abierto} onValueChange={setAbierto} className="mt-3">
         {HORARIO_SEMANAL.map((dia) => {
           const esHoy = dia.dia === hoyDia;
-          const bloques = bloquesDelDia(dia, mes0);
+          const bloques = bloquesDelDia(dia, fecha);
           const extras = aplicanExtraescolares(mes0);
+          const natacionHoy = dia.dia === diaActivoNatacion(fecha);
           return (
             <AccordionItem key={dia.dia} value={String(dia.dia)} className="border-b-0 py-1">
               <AccordionTrigger className="min-h-14 rounded-2xl px-3 hover:bg-secondary hover:no-underline">
@@ -145,7 +148,7 @@ function ListaSemanal({ now }: { now: Date | null }) {
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {extras ? `⭐ ${dia.extraescolar}` : "Sin extraescolar"}
-                      {dia.natacion && extras && " · 🏊 Natación"} · 🍎 {dia.merienda}
+                      {dia.natacion && extras && natacionHoy && " · 🏊 Natación"} · 🍎 {dia.merienda}
                     </p>
                   </div>
                 </div>

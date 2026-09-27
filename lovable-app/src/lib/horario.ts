@@ -1,4 +1,4 @@
-import { HORARIO_SEMANAL, type DiaHorario } from "@/data/horario";
+import { CAMBIO_NATACION_A_LUNES, HORARIO_SEMANAL, type DiaHorario, type DiaSemana } from "@/data/horario";
 import { minutosDelDia, parseHora } from "./fechas";
 
 export type TipoBloque =
@@ -35,10 +35,16 @@ export const esVerano = (mes0: number) => mes0 === 6 || mes0 === 7;
 export const diaHorario = (fecha: Date): DiaHorario | undefined =>
   HORARIO_SEMANAL.find((d) => d.dia === fecha.getDay());
 
-/** Construye la línea de tiempo completa de un día lectivo según la fecha (mes) */
-export function bloquesDelDia(dia: DiaHorario, mes0: number): Bloque[] {
+/** Día de la semana en el que toca natación: lunes desde el 1 nov 2026, miércoles antes */
+export const diaActivoNatacion = (fecha: Date): DiaSemana =>
+  fecha >= CAMBIO_NATACION_A_LUNES ? 1 : 3;
+
+/** Construye la línea de tiempo completa de un día lectivo según la fecha */
+export function bloquesDelDia(dia: DiaHorario, fecha: Date): Bloque[] {
+  const mes0 = fecha.getMonth();
   const corta = esJornadaCorta(mes0);
   const extras = aplicanExtraescolares(mes0);
+  const natacionHoy = dia.dia === diaActivoNatacion(fecha);
 
   const b: Bloque[] = [
     {
@@ -117,7 +123,7 @@ export function bloquesDelDia(dia: DiaHorario, mes0: number): Bloque[] {
 
   b.push({ tipo: "salida", titulo: "Salida del cole", inicio: "17:00", fin: "17:00", icono: "🏠" });
 
-  if (dia.natacion && extras) {
+  if (dia.natacion && extras && natacionHoy) {
     b.push(
       {
         tipo: "camino",
@@ -158,7 +164,7 @@ export function estadoAhora(ahora: Date): EstadoAhora {
   if (!dia) {
     return { titulo: "Hoy no hay cole", detalle: "¡A disfrutar del fin de semana!", icono: "🎈" };
   }
-  const bloques = bloquesDelDia(dia, mes0).filter((b) => b.tipo !== "salida");
+  const bloques = bloquesDelDia(dia, ahora).filter((b) => b.tipo !== "salida");
   const t = minutosDelDia(ahora);
   const primero = bloques[0];
   const ultimo = bloques[bloques.length - 1];

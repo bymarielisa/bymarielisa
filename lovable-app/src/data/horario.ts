@@ -21,7 +21,13 @@ export const COLEGIO = {
 };
 
 export const HORARIO_SEMANAL: DiaHorario[] = [
-  { dia: 1, nombre: "Lunes", extraescolar: "Robótica", merienda: "Fruta" },
+  {
+    dia: 1,
+    nombre: "Lunes",
+    extraescolar: "Robótica",
+    merienda: "Fruta",
+    natacion: { inicio: "17:30", fin: "18:00", lugar: "Polideportivo" },
+  },
   { dia: 2, nombre: "Martes", extraescolar: "Inglés", merienda: "Lácteos / cereales" },
   {
     dia: 3,
@@ -33,3 +39,10 @@ export const HORARIO_SEMANAL: DiaHorario[] = [
   { dia: 4, nombre: "Jueves", extraescolar: "Inglés", merienda: "Bocadillo / sándwich" },
   { dia: 5, nombre: "Viernes", extraescolar: "Minichef", merienda: "Libre" },
 ];
+
+/**
+ * A partir de esta fecha la natación pasa de los miércoles a los lunes (17:30–18:00).
+ * Para el siguiente cambio de día de natación, añade otra fecha de corte aquí y
+ * ajusta `diaActivoNatacion` en src/lib/horario.ts.
+ */
+export const CAMBIO_NATACION_A_LUNES = new Date(2026, 10, 1); // 1 de noviembre de 2026
