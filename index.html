@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DamiánFG</title>
+<meta name="description" content="Horario, presupuesto, calendario y custodia de Damián">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky:#6EC6FF;
+    --sun:#FFD166;
+    --coral:#FF6B6B;
+    --leaf:#06D6A0;
+    --lilac:#B98CE0;
+    --cream:#FFFDF7;
+    --ink:#3A3247;
+    --ink-soft:#726B82;
+    --card:#FFFFFF;
+    --card-border:rgba(58,50,71,0.08);
+    --shadow:0 6px 18px rgba(58,50,71,0.10);
+    --radius-lg:26px;
+    --radius-md:18px;
+    --radius-sm:12px;
+    --nav-h:72px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --cream:#211D2B;
+      --ink:#F5F1FA;
+      --ink-soft:#C9C1D6;
+      --card:#2C2739;
+      --card-border:rgba(255,255,255,0.08);
+      --shadow:0 6px 18px rgba(0,0,0,0.35);
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Nunito',sans-serif;
+    padding-bottom:calc(var(--nav-h) + 18px);
+    min-height:100vh;
+  }
+  h1,h2,h3,.font-title{font-family:'Baloo 2',sans-serif;}
+  .app{max-width:560px;margin:0 auto;padding:16px 16px 8px;}
+
+  /* Header */
+  .header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:10px 4px 18px;
+  }
+  .avatar{
+    width:64px;height:64px;flex:0 0 64px;
+    border-radius:50%;
+    background:linear-gradient(160deg,var(--sun),var(--coral));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow);
+  }
+  .avatar svg{width:56px;height:56px;}
+  .greeting h1{
+    margin:0;
+    font-size:1.35rem;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .greeting p{
+    margin:2px 0 0;
+    font-size:0.92rem;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  .app-name{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:0.72rem;
+    letter-spacing:0.06em;
+    color:var(--lilac);
+    text-transform:uppercase;
+    margin:0 0 2px;
+  }
+
+  /* Sections */
+  .view{display:none;animation:fadein .25s ease;}
+  .view.active{display:block;}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .section-title{
+    font-size:1.05rem;
+    font-weight:700;
+    margin:22px 0 10px;
+    color:var(--ink);
+  }
+  .section-title:first-child{margin-top:0;}
+
+  /* Cards */
+  .card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow);
+    padding:18px;
+    margin-bottom:14px;
+  }
+  .card-hero{
+    background:linear-gradient(135deg,var(--sky),var(--lilac));
+    color:#fff;
+    border:none;
+  }
+  .card-hero .hero-label{
+    font-size:0.75rem;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    opacity:0.9;
+    margin:0 0 6px;
+  }
+  .card-hero .hero-main{
+    font-family:'Baloo 2',sans-serif;
+    font-size:1.4rem;
+    font-weight:700;
+    margin:0 0 4px;
+  }
+  .card-hero .hero-sub{
+    font-size:0.9rem;
+    font-weight:600;
+    opacity:0.95;
+    margin:0;
+  }
+  .hero-icon{font-size:1.6rem;margin-right:8px;}
+
+  /* Accordion (Horario) */
+  .day-item{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:var(--radius-md);
+    margin-bottom:10px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  .day-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  .day-header .day-name{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:1.02rem;
+  }
+  .day-header .day-today-badge{
+    display:inline-block;
+    background:var(--leaf);
+    color:#fff;
+    font-size:0.65rem;
+    font-weight:800;
+    padding:2px 8px;
+    border-radius:20px;
+    margin-left:8px;
+    vertical-align:middle;
+  }
+  .day-header .chevron{
+    transition:transform .2s ease;
+    color:var(--ink-soft);
+    font-size:1.1rem;
+  }
+  .day-item.open .chevron{transform:rotate(180deg);}
+  .day-body{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .25s ease;
+  }
+  .day-item.open .day-body{max-height:800px;}
+  .timeline{
+    list-style:none;
+    margin:0;
+    padding:0 16px 16px;
+  }
+  .timeline li{
+    display:flex;
+    gap:10px;
+    padding:8px 0;
+    border-top:1px dashed var(--card-border);
+    font-size:0.9rem;
+  }
+  .timeline li:first-child{border-top:none;}
+  .timeline .t-time{
+    flex:0 0 auto;
+    font-weight:800;
+    color:var(--lilac);
+    min-width:96px;
+    font-variant-numeric:tabular-nums;
+  }
+  .timeline .t-label{color:var(--ink);font-weight:600;}
+  .timeline .t-extra{display:block;color:var(--ink-soft);font-weight:600;font-size:0.85rem;}
+
+  /* Horario de clase */
+  .day-pills{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .day-pill{
+    flex:1;
+    border:none;
+    border-radius:999px;
+    padding:10px 0;
+    background:var(--cream);
+    color:var(--ink-soft);
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:0.95rem;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:background .15s ease, color .15s ease, transform .1s ease;
+  }
+  .day-pill.active{
+    background:var(--lilac);
+    color:#fff;
+    transform:translateY(-1px);
+  }
+  .class-slots{list-style:none;margin:0;padding:0;}
+  .class-slot{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:9px 0;
+  }
+  .class-slot .cs-time{
+    flex:0 0 auto;
+    min-width:52px;
+    font-weight:800;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    font-variant-numeric:tabular-nums;
+  }
+  .class-slot .cs-chip{
+    flex:1;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border:none;
+    text-align:left;
+    border-radius:var(--radius-sm);
+    padding:10px 14px;
+    font-family:'Nunito',sans-serif;
+    font-weight:800;
+    font-size:0.92rem;
+    color:#2b2430;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .class-slot .cs-chip:disabled{cursor:default;}
+  .class-slot.cs-now .cs-chip{box-shadow:0 0 0 3px var(--ink) inset;}
+  .class-slot.cs-now .cs-time{color:var(--ink);}
+  .class-slot.cs-patio .cs-chip,
+  .class-slot.cs-end .cs-chip{
+    background:transparent !important;
+    color:var(--ink-soft) !important;
+    font-weight:700;
+    font-style:italic;
+    padding:4px 14px;
+    font-size:0.82rem;
+    justify-content:center;
+    border:1px dashed var(--card-border);
+  }
+  .class-footnote{
+    margin:14px 0 0;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    line-height:1.4;
+  }
+  .sheet-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(58,50,71,0.45);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    z-index:100;
+  }
+  .sheet-overlay[hidden]{display:none;}
+  .sheet{
+    position:relative;
+    width:100%;
+    max-width:560px;
+    background:var(--card);
+    border-radius:26px 26px 0 0;
+    padding:10px 22px 28px;
+    box-shadow:0 -8px 24px rgba(0,0,0,0.25);
+    animation:sheet-up .2s ease;
+  }
+  @keyframes sheet-up{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .sheet-handle{
+    width:40px;height:4px;border-radius:4px;
+    background:var(--card-border);
+    margin:4px auto 14px;
+  }
+  .sheet-close{
+    position:absolute;
+    top:14px; right:18px;
+    background:none;border:none;
+    font-size:1.1rem;color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .sheet-icon{font-size:2rem;}
+  .sheet-title{
+    font-family:'Baloo 2',sans-serif;
+    font-size:1.2rem;
+    font-weight:700;
+    margin:10px 0 2px;
+  }
+  .sheet-teacher{
+    font-weight:700;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+  }
+  .sheet-desc{
+    font-size:0.95rem;
+    line-height:1.5;
+    margin:0;
+  }
+  @media (min-width:600px){
+    .sheet{ border-radius:26px; margin-bottom:40px; }
+  }
+
+  /* Gastos */
+  .summary-row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .summary-box{flex:1;text-align:center;}
+  .summary-box .num{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:1.3rem;
+  }
+  .summary-box .lbl{
+    font-size:0.75rem;
+    color:rgba(255,255,255,0.9);
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .month-item{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:var(--radius-md);
+    margin-bottom:10px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .month-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 16px;cursor:pointer;user-select:none;
+  }
+  .month-header .m-name{font-family:'Baloo 2',sans-serif;font-weight:700;}
+  .month-header .m-total{font-weight:800;color:var(--coral);}
+  .month-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+  .month-item.open .month-body{max-height:600px;}
+  .breakdown{list-style:none;margin:0;padding:0 16px 8px;}
+  .breakdown li{
+    display:flex;justify-content:space-between;
+    padding:6px 0;font-size:0.9rem;border-top:1px dashed var(--card-border);
+  }
+  .breakdown li:first-child{border-top:none;}
+  .breakdown .concept{color:var(--ink);}
+  .breakdown .amount{font-weight:700;color:var(--ink-soft);}
+  .split-row{
+    display:flex;gap:10px;padding:10px 16px 16px;
+  }
+  .split-pill{
+    flex:1;
+    border-radius:var(--radius-sm);
+    padding:10px;
+    text-align:center;
+    font-weight:800;
+    font-size:0.85rem;
+    color:#fff;
+  }
+  .split-pill.papa{background:var(--sky);}
+  .split-pill.mama{background:var(--coral);}
+  .split-pill small{display:block;font-weight:600;font-size:0.72rem;opacity:0.9;margin-top:2px;}
+
+  /* Calendario: recordatorios */
+  .reminder-month{margin-bottom:6px;}
+  .reminder-month h4{
+    font-family:'Baloo 2',sans-serif;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    margin:14px 0 8px;
+  }
+  .reminder-item{
+    display:flex;gap:12px;align-items:flex-start;
+    padding:10px 0;border-top:1px dashed var(--card-border);
+  }
+  .reminder-item:first-child{border-top:none;}
+  .reminder-dot{font-size:1.2rem;line-height:1.4;}
+  .reminder-title{font-weight:700;}
+  .reminder-date{display:block;font-size:0.82rem;color:var(--ink-soft);font-weight:600;}
+
+  /* Cumpleaños */
+  #birthdaysCard{display:none;}
+  .bday-item{
+    display:flex;align-items:center;gap:12px;
+    padding:10px 0;border-top:1px dashed var(--card-border);
+  }
+  .bday-item:first-child{border-top:none;}
+  .bday-avatar{
+    width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.2rem;flex:0 0 40px;color:#fff;font-weight:700;
+  }
+  .bday-avatar.familia{background:var(--leaf);}
+  .bday-avatar.amigo{background:var(--lilac);}
+  .bday-avatar.hijo{background:linear-gradient(135deg,var(--sun),var(--coral));}
+  .bday-name{font-weight:700;}
+  .bday-when{display:block;font-size:0.82rem;color:var(--ink-soft);font-weight:700;}
+
+  /* Mini calendar grid (shared) */
+  .cal-nav{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .cal-nav button{
+    background:var(--cream);
+    border:1px solid var(--card-border);
+    color:var(--ink);
+    width:36px;height:36px;border-radius:50%;
+    font-size:1rem;cursor:pointer;
+  }
+  .cal-nav .cal-title{font-family:'Baloo 2',sans-serif;font-weight:700;text-transform:capitalize;}
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+    text-align:center;
+  }
+  .cal-grid .cal-dow{
+    font-size:0.68rem;font-weight:800;color:var(--ink-soft);
+    text-transform:uppercase;padding-bottom:4px;
+  }
+  .cal-cell{
+    position:relative;
+    aspect-ratio:1/1;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:10px;
+    font-size:0.82rem;font-weight:700;
+    color:var(--ink);
+  }
+  .cal-cell.empty{visibility:hidden;}
+  .cal-cell.today{box-shadow:inset 0 0 0 2px var(--lilac);}
+  .cal-cell.holiday{background:var(--coral);color:#fff;}
+  .cal-cell.bday-familia{background:var(--leaf);color:#fff;}
+  .cal-cell.bday-amigo{background:var(--lilac);color:#fff;}
+  .cal-cell.bday-hijo{background:linear-gradient(135deg,var(--sun),var(--coral));color:#fff;}
+  .cal-cell.papa{background:var(--sky);color:#fff;}
+  .cal-cell.mama{background:var(--coral);color:#fff;}
+  .cal-cell.split{
+    background:linear-gradient(90deg,var(--coral) 0 50%, var(--sky) 50% 100%);
+    color:#fff;
+  }
+  .cal-cell.split16{
+    background:linear-gradient(90deg,var(--sky) 0 50%, var(--coral) 50% 100%);
+    color:#fff;
+  }
+  .cal-legend{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:0.78rem;color:var(--ink-soft);font-weight:700;
+  }
+  .cal-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .cal-legend i{width:12px;height:12px;border-radius:4px;display:inline-block;}
+  .holiday-list{list-style:none;margin:12px 0 0;padding:0;}
+  .holiday-list li{
+    display:flex;justify-content:space-between;
+    padding:8px 0;border-top:1px dashed var(--card-border);font-size:0.88rem;
+  }
+  .holiday-list li:first-child{border-top:none;}
+  .holiday-list .h-date{color:var(--ink-soft);font-weight:700;}
+
+  /* Custodia hero details */
+  .custody-note{
+    margin-top:8px;
+    font-size:0.85rem;
+    background:rgba(255,255,255,0.18);
+    border-radius:var(--radius-sm);
+    padding:8px 10px;
+    font-weight:700;
+  }
+
+  .empty-note{color:var(--ink-soft);font-size:0.88rem;font-weight:600;}
+
+  /* Bottom nav */
+  .bottom-nav{
+    position:fixed;left:0;right:0;bottom:0;
+    height:var(--nav-h);
+    background:var(--card);
+    border-top:1px solid var(--card-border);
+    display:flex;
+    box-shadow:0 -4px 14px rgba(58,50,71,0.08);
+    padding-bottom:env(safe-area-inset-bottom);
+    z-index:50;
+  }
+  .nav-btn{
+    flex:1;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;
+    background:none;border:none;
+    color:var(--ink-soft);
+    font-family:'Nunito',sans-serif;
+    font-weight:700;
+    font-size:0.68rem;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .nav-btn .nav-icon{font-size:1.35rem;}
+  .nav-btn.active{color:var(--coral);}
+  .nav-btn.active .nav-icon{transform:translateY(-2px);}
+
+  @media (min-width:600px){
+    .app{padding-top:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <div class="avatar" aria-hidden="true">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="54" r="34" fill="#FFDCB8"/>
+        <path d="M16 46 C14 20 40 6 52 8 C74 11 86 30 82 48 C80 40 74 34 66 32 C68 26 62 20 55 22 C57 17 50 14 45 17 C40 13 32 16 32 22 C24 21 18 30 20 38 C15 39 15 43 16 46 Z" fill="#8B5A2B"/>
+        <circle cx="37" cy="56" r="4.2" fill="#3A3247"/>
+        <circle cx="63" cy="56" r="4.2" fill="#3A3247"/>
+        <circle cx="30" cy="62" r="5" fill="#FF9E9E" opacity="0.7"/>
+        <circle cx="70" cy="62" r="5" fill="#FF9E9E" opacity="0.7"/>
+        <path d="M36 70 Q50 84 64 70" stroke="#3A3247" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="greeting">
+      <p class="app-name">DamiánFG</p>
+      <h1 id="greetingText">¡Hola!</h1>
+      <p id="greetingDate">Hoy es...</p>
+    </div>
+  </header>
+
+  <!-- ================= HORARIO ================= -->
+  <section id="view-horario" class="view active">
+    <div id="nowCard" class="card card-hero"></div>
+
+    <h2 class="section-title">Horario de clase – 4 años A</h2>
+    <div id="classScheduleCard" class="card"></div>
+
+    <h2 class="section-title">Semana</h2>
+    <div id="weekList"></div>
+  </section>
+
+  <!-- Modal / bottom sheet para el detalle de cada asignatura -->
+  <div id="subjectSheetOverlay" class="sheet-overlay" hidden>
+    <div class="sheet" id="subjectSheet" role="dialog" aria-modal="true" aria-labelledby="subjectSheetTitle">
+      <div class="sheet-handle"></div>
+      <button type="button" class="sheet-close" id="subjectSheetClose" aria-label="Cerrar">✕</button>
+      <div id="subjectSheetBody"></div>
+    </div>
+  </div>
+
+  <!-- ================= GASTOS ================= -->
+  <section id="view-gastos" class="view">
+    <div class="card card-hero" style="background:linear-gradient(135deg,var(--sun),var(--coral));">
+      <p class="hero-label">Curso 2026–2027</p>
+      <div class="summary-row">
+        <div class="summary-box">
+          <div class="num" id="totalCurso">0 €</div>
+          <div class="lbl">Total acumulado</div>
+        </div>
+        <div class="summary-box">
+          <div class="num" id="mediaMensual">0 €</div>
+          <div class="lbl">Media mensual</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Meses</h2>
+    <div id="monthsList"></div>
+  </section>
+
+  <!-- ================= CALENDARIO ================= -->
+  <section id="view-calendario" class="view">
+    <h2 class="section-title">Recordatorios</h2>
+    <div id="remindersCard" class="card"></div>
+
+    <h2 class="section-title">Cumpleaños cerca</h2>
+    <div id="birthdaysCard" class="card"></div>
+
+    <h2 class="section-title">Días no lectivos</h2>
+    <div class="card">
+      <div class="cal-nav">
+        <button id="holCalPrev" aria-label="Mes anterior">‹</button>
+        <div class="cal-title" id="holCalTitle"></div>
+        <button id="holCalNext" aria-label="Mes siguiente">›</button>
+      </div>
+      <div class="cal-grid" id="holCalGrid"></div>
+      <div class="cal-legend">
+        <span><i style="background:var(--coral);"></i> Festivo</span>
+        <span><i style="background:linear-gradient(135deg,var(--sun),var(--coral));"></i> Cumple Damián</span>
+        <span><i style="background:var(--leaf);"></i> Cumple familia</span>
+        <span><i style="background:var(--lilac);"></i> Cumple amigo</span>
+      </div>
+      <ul class="holiday-list" id="holidayList"></ul>
+    </div>
+  </section>
+
+  <!-- ================= CUSTODIA ================= -->
+  <section id="view-custodia" class="view">
+    <div id="custodyNowCard" class="card card-hero"></div>
+
+    <h2 class="section-title">Calendario de custodia</h2>
+    <div class="card">
+      <div class="cal-nav">
+        <button id="custCalPrev" aria-label="Mes anterior">‹</button>
+        <div class="cal-title" id="custCalTitle"></div>
+        <button id="custCalNext" aria-label="Mes siguiente">›</button>
+      </div>
+      <div class="cal-grid" id="custCalGrid"></div>
+      <div class="cal-legend">
+        <span><i style="background:var(--sky);"></i> Papá</span>
+        <span><i style="background:var(--coral);"></i> Mamá</span>
+        <span><i style="background:linear-gradient(90deg,var(--coral) 0 50%, var(--sky) 50% 100%);"></i> Día partido</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-view="horario">
+    <span class="nav-icon">🗓️</span><span>Horario</span>
+  </button>
+  <button class="nav-btn" data-view="gastos">
+    <span class="nav-icon">💶</span><span>Gastos</span>
+  </button>
+  <button class="nav-btn" data-view="calendario">
+    <span class="nav-icon">📅</span><span>Calendario</span>
+  </button>
+  <button class="nav-btn" data-view="custodia">
+    <span class="nav-icon">🤝</span><span>Custodia</span>
+  </button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   UTILIDADES DE FECHA (siempre en hora/zona LOCAL, nunca UTC)
+   ========================================================= */
+function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function sameLocalDay(a,b){
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
+function minutesOfDay(d){ return d.getHours()*60 + d.getMinutes(); }
+function parseHM(hm){ const [h,m]=hm.split(':').map(Number); return h*60+m; }
+
+const DOW_NAMES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MONTH_NAMES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+function longDateEs(d){
+  return `${DOW_NAMES[d.getDay()]}, ${d.getDate()} de ${MONTH_NAMES[d.getMonth()]} de ${d.getFullYear()}`;
+}
+function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+const NOW = new Date();
+
+/* =========================================================
+   CABECERA
+   ========================================================= */
+document.getElementById('greetingText').textContent = `¡Hola! Hoy es ${DOW_NAMES[NOW.getDay()]}`;
+document.getElementById('greetingDate').textContent = capitalize(`${NOW.getDate()} de ${MONTH_NAMES[NOW.getMonth()]} de ${NOW.getFullYear()}`);
+
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
+const navButtons = document.querySelectorAll('.nav-btn');
+const views = document.querySelectorAll('.view');
+navButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    navButtons.forEach(b=>b.classList.remove('active'));
+    views.forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+/* =========================================================
+   SECCIÓN 1: HORARIO
+   ========================================================= */
+
+// A partir de esta fecha la natación pasa de los miércoles a los lunes (17:30–18:00).
+// Para el siguiente cambio de día de natación, añade otra fecha aquí y ajusta el from/until de abajo.
+const NATACION_CAMBIO = new Date(2026, 10, 1); // 1 de noviembre de 2026
+
+// Datos por día de la semana (1=lunes ... 5=viernes).
+// Para añadir/cambiar una extraescolar o merienda, edita este array.
+// "offsite" es una actividad fuera del cole después de la extraescolar normal (natación, rugby…):
+// id/name/icon/start/end/location, y opcionalmente "from"/"until" (Date) si solo aplica desde/hasta cierta fecha.
+const WEEKDAYS = [
+  { id:1, name:'Lunes',     extra:'Música, Arte y Psicomotricidad', merienda:'Fruta',
+    offsite:{ id:'natacion', name:'Natación', icon:'🏊', start:'17:30', end:'18:00', location:'Polideportivo', from:NATACION_CAMBIO } },
+  { id:2, name:'Martes',    extra:'Inglés', merienda:'Lácteos o cereales',
+    offsite:{ id:'rugby', name:'Rugby', icon:'🏉', start:'17:30', end:'19:00', location:'Campo de las Leonas' } },
+  { id:3, name:'Miércoles', extra:'Música, Arte y Psicomotricidad', merienda:'Fruta',
+    offsite:{ id:'natacion', name:'Natación', icon:'🏊', start:'17:30', end:'18:00', location:'Polideportivo', until:NATACION_CAMBIO } },
+  { id:4, name:'Jueves',    extra:'Inglés', merienda:'Bocadillo o sándwich',
+    offsite:{ id:'rugby', name:'Rugby', icon:'🏉', start:'17:30', end:'19:00', location:'Campo de las Leonas' } },
+  { id:5, name:'Viernes',   extra:'Minichef', merienda:'Libre' },
+];
+
+// true en septiembre y junio (jornada reducida / "adelantada" ~1h)
+function isShortSchedule(month){ return month===8 || month===5; } // 0-index: 8=sept, 5=junio
+// las extraescolares regulares (y las actividades fuera del cole) no aplican en septiembre
+function extrasApply(month){ return month!==8; }
+
+// Devuelve la actividad fuera del cole de hoy (natación, rugby…) si el día la tiene y está vigente, o null.
+function offsiteToday(dayInfo, date){
+  const os = dayInfo.offsite;
+  if(!os) return null;
+  if(os.from && date < os.from) return null;
+  if(os.until && date >= os.until) return null;
+  return os;
+}
+
+// Construye la lista de bloques de la línea de tiempo para un día concreto.
+function buildDayBlocks(dayInfo, month){
+  const short = isShortSchedule(month);
+  const extras = extrasApply(month);
+  const offsite = extras ? offsiteToday(dayInfo, NOW) : null;
+  const blocks = [];
+  blocks.push({label:'Entrada y acogida', start:'08:55', end:'09:05'});
+  blocks.push({label:'Clases', start:'09:30', end:'11:15'});
+  blocks.push({label:'Recreo', start:'11:15', end:'11:45', extra:`Merienda de hoy: ${dayInfo.merienda}`});
+
+  if(!short){
+    blocks.push({label:'Clases', start:'11:45', end:'14:00'});
+    blocks.push({label:'Comedor', start:'14:05', end:'14:40'});
+    blocks.push({label:'Juegos', start:'14:40', end:'15:45'});
+    blocks.push({label:'Recogida (salida general)', start:'15:45', end:'16:00'});
+    if(extras){
+      blocks.push({label:'Extraescolar', start:'16:00', end:'17:00', extra:dayInfo.extra});
+    }
+  } else {
+    blocks.push({label:'Clases', start:'11:45', end:'13:00'});
+    blocks.push({label:'Comedor', start:'13:05', end:'13:40'});
+    if(extras){
+      blocks.push({label:'Tardes de cole', start:'13:40', end:'16:00'});
+      blocks.push({label:'Extraescolar', start:'16:00', end:'17:00', extra:dayInfo.extra});
+    } else {
+      blocks.push({label:'Tardes de cole', start:'13:40', end:'17:00'});
+    }
+  }
+  blocks.push({label:'Salida del cole', start:'17:00', end:'17:00'});
+  if(offsite){
+    blocks.push({label:`Camino a ${offsite.name.toLowerCase()}`, start:'17:00', end:offsite.start});
+    blocks.push({label:offsite.name, start:offsite.start, end:offsite.end, extra:`${offsite.location} (fuera del cole)`});
+  }
+  return blocks;
+}
+
+// Calcula el estado de "ahora mismo" para un día concreto y una hora dada (minutos desde medianoche).
+function computeNowStatus(dayInfo, month, nowMin){
+  const short = isShortSchedule(month);
+  const extras = extrasApply(month);
+  const offsite = extras ? offsiteToday(dayInfo, NOW) : null;
+  const entrada = parseHM('08:55');
+  const clase1Start = parseHM('09:30');
+  const recreoStart = parseHM('11:15');
+  const recreoEnd = parseHM('11:45');
+  const clase2End = short ? parseHM('13:00') : parseHM('14:00');
+  const comedorEnd = short ? parseHM('13:40') : parseHM('14:40');
+  const extraStart = parseHM('16:00');
+  const extraEnd = parseHM('17:00');
+
+  if(nowMin < entrada) return { text:'Antes de entrar al cole', icon:'⏰' };
+  if(nowMin < clase1Start) return { text:'Acogida', icon:'🎒' };
+  if(nowMin < recreoStart) return { text:'En clase', icon:'✏️' };
+  if(nowMin < recreoEnd) return { text:`Recreo — merienda de hoy: ${dayInfo.merienda}`, icon:'🍎' };
+  if(nowMin < clase2End) return { text:'En clase', icon:'✏️' };
+  if(nowMin < comedorEnd) return { text:'Comedor', icon:'🍽️' };
+  if(extras && nowMin < extraStart) return { text:'Recogida (o juegos hasta la salida general)', icon:'🧸' };
+  if(!extras && nowMin < parseHM('17:00')) return { text:'Recogida (o juegos hasta la salida general)', icon:'🧸' };
+  if(extras && nowMin < extraEnd) return { text:`Extraescolar: ${dayInfo.extra}`, icon:'🎨' };
+  if(offsite){
+    const osStart = parseHM(offsite.start);
+    const osEnd = parseHM(offsite.end);
+    if(nowMin < osStart) return { text:`Camino a ${offsite.name.toLowerCase()}`, icon:'🚗' };
+    if(nowMin < osEnd) return { text:`${offsite.name} (${offsite.location})`, icon:offsite.icon };
+    return { text:'Ya salió del cole', icon:'🌙' };
+  }
+  return { text:'Ya salió del cole', icon:'🌙' };
+}
+
+function renderNowCard(){
+  const el = document.getElementById('nowCard');
+  const dow = NOW.getDay(); // 0=domingo...6=sábado
+  if(dow===0 || dow===6){
+    el.innerHTML = `
+      <p class="hero-label">Ahora mismo</p>
+      <p class="hero-main"><span class="hero-icon">🏡</span>Hoy no hay cole</p>
+      <p class="hero-sub">Fin de semana en familia</p>`;
+    return;
+  }
+  const dayInfo = WEEKDAYS.find(d=>d.id===dow);
+  const status = computeNowStatus(dayInfo, NOW.getMonth(), minutesOfDay(NOW));
+  const extras = extrasApply(NOW.getMonth());
+  const offsite = extras ? offsiteToday(dayInfo, NOW) : null;
+  const subLine = extras
+    ? `Extraescolar de hoy: ${dayInfo.extra}${offsite ? ` + ${offsite.name} (${offsite.start}–${offsite.end})` : ''}`
+    : 'Sin extraescolares todavía este mes';
+  const claseKey = classSubjectAt(dow, minutesOfDay(NOW));
+  const claseLine = (claseKey && claseKey!=='PATIO')
+    ? `<p class="hero-sub">En clase toca: ${CLASS_SUBJECTS[claseKey].icon} ${CLASS_SUBJECTS[claseKey].name}</p>`
+    : '';
+  el.innerHTML = `
+    <p class="hero-label">Ahora mismo · ${dayInfo.name}</p>
+    <p class="hero-main"><span class="hero-icon">${status.icon}</span>${status.text}</p>
+    <p class="hero-sub">${subLine}</p>
+    ${claseLine}`;
+}
+
+function renderWeekList(){
+  const container = document.getElementById('weekList');
+  const todayDow = NOW.getDay();
+  container.innerHTML = '';
+  WEEKDAYS.forEach(dayInfo=>{
+    const isToday = dayInfo.id === todayDow;
+    const item = document.createElement('div');
+    item.className = 'day-item' + (isToday ? ' open' : '');
+    const blocks = buildDayBlocks(dayInfo, NOW.getMonth());
+    item.innerHTML = `
+      <div class="day-header">
+        <span class="day-name">${dayInfo.name}${isToday ? '<span class="day-today-badge">HOY</span>' : ''}</span>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="day-body">
+        <ul class="timeline">
+          ${blocks.map(b=>`
+            <li>
+              <span class="t-time">${b.start}${b.end && b.end!==b.start ? '–'+b.end : ''}</span>
+              <span>
+                <span class="t-label">${b.label}</span>
+                ${b.extra ? `<span class="t-extra">${b.extra}</span>` : ''}
+              </span>
+            </li>`).join('')}
+        </ul>
+      </div>`;
+    item.querySelector('.day-header').addEventListener('click', ()=>{
+      item.classList.toggle('open');
+    });
+    container.appendChild(item);
+  });
+}
+
+/* =========================================================
+   HORARIO DE CLASE — 4 años A (curso 2026-27)
+   ========================================================= */
+
+// Asignaturas/materias: color, icono, descripción y quién la imparte.
+// Para cambiar de profe o el texto de una asignatura, edita aquí su entrada.
+const CLASS_SUBJECTS = {
+  AREA1: {
+    name: 'Área 1',
+    label: 'Área 1 · Crecimiento en Armonía',
+    color: '#06D6A0', // leaf
+    icon: '🌱',
+    desc: 'Conocerse a sí mismo, emociones, autonomía (baño, comer, vestirse), hábitos de higiene y convivencia con los demás.',
+    teacher: 'Sara (tutora)',
+  },
+  AREA2: {
+    name: 'Área 2',
+    label: 'Área 2 · Descubrimiento y Exploración del Entorno',
+    color: '#6EC6FF', // sky
+    icon: '🔎',
+    desc: 'Números, formas, colores, clasificar, naturaleza, animales, estaciones y pequeños experimentos.',
+    teacher: 'Sara (tutora)',
+  },
+  AREA3: {
+    name: 'Área 3',
+    label: 'Área 3 · Comunicación y Representación de la Realidad',
+    color: '#FF6B6B', // coral
+    icon: '🎨',
+    desc: 'Lenguaje oral, iniciación a la lectoescritura, cuentos, dibujo y plástica, expresión corporal.',
+    teacher: 'Sara (tutora)',
+  },
+  INGLES: {
+    name: 'Inglés',
+    label: 'Inglés',
+    color: '#FFD166', // sun
+    icon: '🇬🇧',
+    desc: 'Clase de inglés del colegio bilingüe.',
+    teacher: 'Miss Pilar (Pilar Vera)',
+  },
+  MUSICA: {
+    name: 'Música',
+    label: 'Música',
+    color: '#3DD6C5', // turquesa
+    icon: '🎵',
+    desc: 'Clase de música.',
+    teacher: 'Alba',
+  },
+  PSICO: {
+    name: 'Psicomotricidad',
+    label: 'Psicomotricidad',
+    color: '#FF9F5B', // naranja
+    icon: '🤸',
+    desc: 'Psicomotricidad.',
+    teacher: 'Sara (tutora)',
+  },
+  MAE: {
+    name: 'MAE/Religión',
+    label: 'MAE / Religión',
+    color: '#C9A877', // arena
+    icon: '🕊️',
+    desc: 'Religión o Medidas de Atención Educativa (la alternativa a Religión), según lo elegido en la matrícula.',
+    teacher: 'Según matrícula',
+  },
+  PATIO: {
+    name: 'Patio',
+    label: 'Patio',
+    color: '#E4DFD2',
+    icon: '🌳',
+    desc: 'Recreo de 11:15 a 11:45.',
+    teacher: null,
+  },
+};
+
+// Horario oficial de clase, curso 2026-27 (1=lunes … 5=viernes).
+// Para cambiar una franja, edita la entrada correspondiente (hora + clave de CLASS_SUBJECTS).
+const CLASS_SCHEDULE = {
+  1: [ // Lunes
+    { time:'09:00', subject:'AREA1' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'AREA1' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'INGLES' },
+    { time:'12:30', subject:'AREA3' },
+    { time:'13:15', subject:'MAE' },
+  ],
+  2: [ // Martes
+    { time:'09:00', subject:'INGLES' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'AREA1' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'AREA2' },
+    { time:'12:30', subject:'INGLES' },
+    { time:'13:15', subject:'AREA3' },
+  ],
+  3: [ // Miércoles
+    { time:'09:00', subject:'AREA1' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'MUSICA' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'AREA2' },
+    { time:'12:30', subject:'INGLES' },
+    { time:'13:15', subject:'AREA3' },
+  ],
+  4: [ // Jueves
+    { time:'09:00', subject:'AREA1' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'AREA3' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'AREA1' },
+    { time:'12:30', subject:'INGLES' },
+    { time:'13:15', subject:'AREA2' },
+  ],
+  5: [ // Viernes
+    { time:'09:00', subject:'AREA1' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'MAE' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'AREA1' },
+    { time:'12:30', subject:'PSICO' },
+    { time:'13:15', subject:'AREA3' },
+  ],
+};
+
+const CLASS_SLOT_TIMES = ['09:00','09:45','10:30','11:15','11:45','12:30','13:15','14:00'];
+
+let selectedClassDay = (NOW.getDay() >= 1 && NOW.getDay() <= 5) ? NOW.getDay() : 1;
+
+// Devuelve la asignatura (clave de CLASS_SUBJECTS) que toca en un día+hora dados, o null.
+function classSubjectAt(dayId, nowMin){
+  const slots = CLASS_SCHEDULE[dayId];
+  if(!slots) return null;
+  if(nowMin < parseHM(CLASS_SLOT_TIMES[0]) || nowMin >= parseHM('14:00')) return null;
+  for(let i=0;i<slots.length;i++){
+    const start = parseHM(CLASS_SLOT_TIMES[i]);
+    const end = parseHM(CLASS_SLOT_TIMES[i+1]);
+    if(nowMin >= start && nowMin < end) return slots[i].subject;
+  }
+  return null;
+}
+
+function renderClassScheduleCard(){
+  const card = document.getElementById('classScheduleCard');
+  const todayDow = NOW.getDay();
+  const slots = CLASS_SCHEDULE[selectedClassDay] || [];
+  const nowMin = minutesOfDay(NOW);
+
+  const pills = ['L','M','X','J','V'].map((letter, i)=>{
+    const dayId = i+1;
+    return `<button type="button" class="day-pill${dayId===selectedClassDay ? ' active' : ''}" data-day="${dayId}">${letter}</button>`;
+  }).join('');
+
+  const rows = slots.map((slot, i)=>{
+    const subj = CLASS_SUBJECTS[slot.subject];
+    const end = CLASS_SLOT_TIMES[i+1];
+    const isNow = selectedClassDay===todayDow && nowMin>=parseHM(slot.time) && nowMin<parseHM(end);
+    const isPatio = slot.subject==='PATIO';
+    return `
+      <li class="class-slot${isNow ? ' cs-now' : ''}${isPatio ? ' cs-patio' : ''}">
+        <span class="cs-time">${slot.time}</span>
+        <button type="button" class="cs-chip" style="background:${subj.color}" data-subject="${slot.subject}" ${isPatio ? 'disabled' : ''}>
+          <span>${subj.icon}</span><span>${subj.name}</span>
+        </button>
+      </li>`;
+  }).join('');
+
+  const endRow = `
+    <li class="class-slot cs-end">
+      <span class="cs-time">14:00</span>
+      <button type="button" class="cs-chip" disabled>
+        <span>🍽️</span><span>Comedor / Casa</span>
+      </button>
+    </li>`;
+
+  card.innerHTML = `
+    <div class="day-pills">${pills}</div>
+    <ul class="class-slots">${rows}${endRow}</ul>
+    <p class="class-footnote">Las áreas son las del currículo oficial de Infantil (LOMLOE). En clase se trabajan de forma global: el horario marca el foco de cada franja.</p>`;
+
+  card.querySelectorAll('.day-pill').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      selectedClassDay = Number(btn.dataset.day);
+      renderClassScheduleCard();
+    });
+  });
+  card.querySelectorAll('.cs-chip[data-subject]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openSubjectSheet(btn.dataset.subject));
+  });
+}
+
+function openSubjectSheet(key){
+  const subj = CLASS_SUBJECTS[key];
+  if(!subj) return;
+  document.getElementById('subjectSheetBody').innerHTML = `
+    <p class="sheet-icon">${subj.icon}</p>
+    <p class="sheet-title">${subj.label}</p>
+    ${subj.teacher ? `<p class="sheet-teacher">Imparte: ${subj.teacher}</p>` : ''}
+    <p class="sheet-desc">${subj.desc}</p>`;
+  document.getElementById('subjectSheetOverlay').hidden = false;
+}
+function closeSubjectSheet(){
+  document.getElementById('subjectSheetOverlay').hidden = true;
+}
+document.getElementById('subjectSheetClose').addEventListener('click', closeSubjectSheet);
+document.getElementById('subjectSheetOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'subjectSheetOverlay') closeSubjectSheet();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') closeSubjectSheet();
+});
+
+renderClassScheduleCard();
+renderNowCard();
+renderWeekList();
+
+/* =========================================================
+   SECCIÓN 2: GASTOS
+   ========================================================= */
+
+// Para añadir un mes nuevo, copia un objeto y ajusta items/total.
+// "cadaUno" se calcula automáticamente como total / 2.
+const MONTHS = [
+  { name:'Septiembre 2026', items:[
+      {c:'Comedor María de Villota', v:54},
+      {c:'Alventus tardes de cole', v:58},
+      {c:'Cooperativa', v:60},
+      {c:'AFA', v:30},
+      {c:'Material de aula', v:7.20},
+      {c:'Natación', v:8.90},
+    ]},
+  { name:'Octubre 2026', items:[
+      {c:'Comedor María de Villota', v:63},
+      {c:'Inglés', v:38},
+      {c:'Robótica', v:40.50},
+      {c:'Minichef', v:19},
+      {c:'Material anual', v:16.50},
+      {c:'Natación', v:8.90},
+    ]},
+  { name:'Noviembre 2026', items:[
+      {c:'Comedor María de Villota', v:57},
+      {c:'Inglés', v:38},
+      {c:'Robótica', v:40.50},
+      {c:'Minichef', v:19},
+      {c:'Natación', v:8.90},
+    ]},
+  { name:'Diciembre 2026', items:[
+      {c:'Comedor María de Villota', v:42},
+      {c:'Inglés', v:38},
+      {c:'Robótica', v:40.50},
+      {c:'Minichef', v:19},
+      {c:'Natación', v:8.90},
+    ]},
+  { name:'Enero 2027', items:[
+      {c:'Comedor María de Villota', v:45},
+      {c:'Inglés', v:38},
+      {c:'Robótica', v:40.50},
+      {c:'Minichef', v:19},
+      {c:'Natación', v:8.90},
+    ]},
+  { name:'Febrero 2027', items:[
+      {c:'Comedor María de Villota', v:54},
+      {c:'Inglés', v:38},
+      {c:'Robótica', v:40.50},
+      {c:'Minichef', v:19},
+      {c:'Natación', v:8.90},
+    ]},
+  // 👉 Añade aquí el siguiente mes (Marzo 2027, etc.)
+];
+
+function eur(n){
+  return n.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+}
+
+MONTHS.forEach(m=>{
+  m.total = m.items.reduce((s,i)=>s+i.v,0);
+  m.cadaUno = m.total/2;
+});
+
+function renderGastos(){
+  const totalCurso = MONTHS.reduce((s,m)=>s+m.total,0);
+  const media = totalCurso / MONTHS.length;
+  document.getElementById('totalCurso').textContent = eur(totalCurso);
+  document.getElementById('mediaMensual').textContent = eur(media);
+
+  const list = document.getElementById('monthsList');
+  list.innerHTML = '';
+  MONTHS.forEach((m, idx)=>{
+    const item = document.createElement('div');
+    item.className = 'month-item';
+    item.innerHTML = `
+      <div class="month-header">
+        <span class="m-name">${m.name}</span>
+        <span class="m-total">${eur(m.total)}</span>
+      </div>
+      <div class="month-body">
+        <ul class="breakdown">
+          ${m.items.map(i=>`<li><span class="concept">${i.c}</span><span class="amount">${eur(i.v)}</span></li>`).join('')}
+        </ul>
+        <div class="split-row">
+          <div class="split-pill papa">${eur(m.cadaUno)}<small>Papá</small></div>
+          <div class="split-pill mama">${eur(m.cadaUno)}<small>Mamá</small></div>
+        </div>
+      </div>`;
+    item.querySelector('.month-header').addEventListener('click', ()=>{
+      item.classList.toggle('open');
+    });
+    list.appendChild(item);
+  });
+}
+renderGastos();
+
+/* =========================================================
+   SECCIÓN 3: CALENDARIO
+   ========================================================= */
+
+// Recordatorios agrupados por mes. Añade aquí el siguiente recordatorio.
+const REMINDERS = [
+  { month:'Octubre 2026', items:[
+      {title:'Halloween', date:'30 de octubre', note:'Actividad de centro'},
+      {title:'Visita al parque (todo Infantil)', date:'Finales de octubre', note:'Fecha por confirmar'},
+      {title:'Cita en la policía (renovar DNI y pasaporte)', date:'28 de octubre', note:'11:48'},
+    ]},
+  { month:'Noviembre 2026', items:[
+      {title:'Salida al Planetario', date:'Fecha por confirmar'},
+    ]},
+  { month:'Diciembre 2026', items:[
+      {title:'Festival de Invierno (con familias)', date:'17–18 de diciembre'},
+    ]},
+  // 👉 Añade aquí el siguiente recordatorio
+];
+
+function renderReminders(){
+  const el = document.getElementById('remindersCard');
+  el.innerHTML = REMINDERS.map(group=>`
+    <div class="reminder-month">
+      <h4>${group.month}</h4>
+      ${group.items.map(it=>`
+        <div class="reminder-item">
+          <span class="reminder-dot">📌</span>
+          <span>
+            <span class="reminder-title">${it.title}</span>
+            <span class="reminder-date">${it.date}${it.note ? ' · '+it.note : ''}</span>
+          </span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+renderReminders();
+
+// Cumpleaños: día/mes sin año (mes en formato humano 1-12). Añade aquí el siguiente.
+const BIRTHDAYS = [
+  { name:'Gonzalo',  day:18, month:3,  type:'amigo' },
+  { name:'Adrián',   day:28, month:4,  type:'amigo' },
+  { name:'Victoria', day:6,  month:5,  type:'amigo' },
+  { name:'Rodrigo',  day:8,  month:7,  type:'amigo' },
+  { name:'Daniela',  day:15, month:8,  type:'amigo' },
+  { name:'Lola',     day:4,  month:10, type:'amigo' },
+  { name:'Damián',   day:21, month:10, type:'hijo' },
+  { name:'Mamá',     day:2,  month:12, type:'familia' },
+  { name:'Claudia',  day:16, month:12, type:'familia' },
+  { name:'Papá',     day:19, month:12, type:'familia' },
+  // 👉 Añade aquí el siguiente cumpleaños
+];
+
+// Devuelve la próxima ocurrencia (Date local) de un cumpleaños a partir de "from".
+function nextOccurrence(bday, from){
+  const y = from.getFullYear();
+  let d = new Date(y, bday.month-1, bday.day);
+  if(d < startOfDay(from)) d = new Date(y+1, bday.month-1, bday.day);
+  return d;
+}
+
+function daysBetween(a,b){
+  const MS = 24*60*60*1000;
+  return Math.round((startOfDay(b) - startOfDay(a)) / MS);
+}
+
+function renderBirthdaysNear(){
+  const today = startOfDay(NOW);
+  const upcoming = BIRTHDAYS.map(b=>{
+    const occ = nextOccurrence(b, today);
+    return { ...b, occ, diff: daysBetween(today, occ) };
+  }).filter(b=>b.diff>=0 && b.diff<=14).sort((a,b)=>a.diff-b.diff);
+
+  const card = document.getElementById('birthdaysCard');
+  if(upcoming.length===0){
+    card.style.display = 'none';
+    card.innerHTML = '';
+    return;
+  }
+  card.style.display = 'block';
+  card.innerHTML = upcoming.map(b=>{
+    const when = b.diff===0 ? 'Hoy' : b.diff===1 ? 'Mañana' : `En ${b.diff} días`;
+    const icon = b.type==='hijo' ? '🎂' : b.type==='familia' ? '👪' : '🎈';
+    return `
+      <div class="bday-item">
+        <span class="bday-avatar ${b.type}">${icon}</span>
+        <span>
+          <span class="bday-name">${b.name}</span>
+          <span class="bday-when">${when} · ${b.day} de ${MONTH_NAMES[b.month-1]}</span>
+        </span>
+      </div>`;
+  }).join('');
+}
+renderBirthdaysNear();
+
+// Días festivos / no lectivos del curso. Añade aquí el siguiente festivo.
+// Formato de fecha: {y, m (1-12), d}
+const HOLIDAYS = [
+  { y:2026, m:10, d:12, name:'Fiesta Nacional' },
+  { y:2026, m:11, d:2,  name:'Todos los Santos' },
+  { y:2026, m:11, d:9,  name:'La Almudena' },
+  { y:2026, m:12, d:7,  name:'Día de la Constitución' },
+  { y:2026, m:12, d:8,  name:'Inmaculada Concepción' },
+  { y:2026, m:12, d:23, name:'Comienzan las vacaciones de Navidad' },
+  // 👉 Añade aquí el siguiente día no lectivo
+];
+
+function findHoliday(y,m,d){
+  return HOLIDAYS.find(h=>h.y===y && h.m===m && h.d===d);
+}
+function findBirthdayOn(m,d){
+  return BIRTHDAYS.find(b=>b.month===m && b.day===d);
+}
+
+/* Generador de rejilla mensual reutilizable.
+   decorate(date) => { className, isToday } */
+const DOW_SHORT = ['L','M','X','J','V','S','D'];
+function renderMonthGrid(gridEl, titleEl, year, month, decorate){
+  titleEl.textContent = capitalize(`${MONTH_NAMES[month]} ${year}`);
+  gridEl.innerHTML = '';
+  DOW_SHORT.forEach(d=>{
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    gridEl.appendChild(el);
+  });
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7; // lunes=0
+  for(let i=0;i<firstDow;i++){
+    const el = document.createElement('div');
+    el.className = 'cal-cell empty';
+    gridEl.appendChild(el);
+  }
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  for(let day=1; day<=daysInMonth; day++){
+    const date = new Date(year, month, day);
+    const cell = document.createElement('div');
+    const deco = decorate(date) || {};
+    cell.className = 'cal-cell' + (deco.className ? ' '+deco.className : '');
+    if(sameLocalDay(date, NOW)) cell.classList.add('today');
+    cell.textContent = day;
+    gridEl.appendChild(cell);
+  }
+}
+
+// --- Mini calendario de días no lectivos ---
+let holCalYear = NOW.getFullYear();
+let holCalMonth = NOW.getMonth();
+
+function holidayDecorate(date){
+  const y=date.getFullYear(), m=date.getMonth()+1, d=date.getDate();
+  const hol = findHoliday(y,m,d);
+  if(hol) return { className:'holiday' };
+  const b = findBirthdayOn(m,d);
+  if(b) return { className: 'bday-'+b.type };
+  return {};
+}
+
+function renderHolidayList(){
+  const list = document.getElementById('holidayList');
+  const sorted = [...HOLIDAYS].sort((a,b)=> (a.y-b.y) || (a.m-b.m) || (a.d-b.d));
+  list.innerHTML = sorted.map(h=>`
+    <li>
+      <span>${h.name}</span>
+      <span class="h-date">${h.d} ${MONTH_NAMES[h.m-1].slice(0,3)}. ${h.y}</span>
+    </li>`).join('');
+}
+
+function renderHolCal(){
+  renderMonthGrid(
+    document.getElementById('holCalGrid'),
+    document.getElementById('holCalTitle'),
+    holCalYear, holCalMonth,
+    holidayDecorate
+  );
+}
+document.getElementById('holCalPrev').addEventListener('click', ()=>{
+  holCalMonth--; if(holCalMonth<0){holCalMonth=11; holCalYear--;}
+  renderHolCal();
+});
+document.getElementById('holCalNext').addEventListener('click', ()=>{
+  holCalMonth++; if(holCalMonth>11){holCalMonth=0; holCalYear++;}
+  renderHolCal();
+});
+renderHolCal();
+renderHolidayList();
+
+/* =========================================================
+   SECCIÓN 4: CUSTODIA
+   ========================================================= */
+
+// Regla fija: día 1 (tarde) → 16 (mañana) = Papá; día 16 (tarde) → 1 sig. mes (mañana) = Mamá.
+// Umbral mañana/tarde usado para los días de cambio (1 y 16): 14:00 (tras el comedor).
+const CUSTODY_SWITCH_HOUR_MIN = 14*60;
+
+function isWeekend(date){ const d=date.getDay(); return d===0 || d===6; }
+
+// Propietario para un día completo (para pintar el calendario). Días 1 y 16 son "split".
+function custodyOwnerForDay(date){
+  const day = date.getDate();
+  if(day===1) return 'split1'; // mañana Mamá, tarde Papá
+  if(day===16) return 'split16'; // mañana Papá, tarde Mamá
+  if(day>1 && day<16) return 'Papá';
+  return 'Mamá'; // día 17 en adelante, o fin de mes tras el 16
+}
+
+// Propietario en un instante concreto (fecha + hora).
+function custodyOwnerNow(date){
+  const day = date.getDate();
+  const mins = minutesOfDay(date);
+  if(day===1) return mins < CUSTODY_SWITCH_HOUR_MIN ? 'Mamá' : 'Papá';
+  if(day===16) return mins < CUSTODY_SWITCH_HOUR_MIN ? 'Papá' : 'Mamá';
+  if(day>1 && day<16) return 'Papá';
+  return 'Mamá';
+}
+
+function switchMoment(y,m,day){
+  const h = Math.floor(CUSTODY_SWITCH_HOUR_MIN/60), mi = CUSTODY_SWITCH_HOUR_MIN%60;
+  return new Date(y,m,day,h,mi);
+}
+function nextCustodyChange(from){
+  const y = from.getFullYear(), m = from.getMonth();
+  const candidates = [
+    switchMoment(y,m,1),
+    switchMoment(y,m,16),
+    switchMoment(y,m+1,1),
+  ];
+  return candidates.find(c => c > from);
+}
+
+function renderCustodyNow(){
+  const owner = custodyOwnerNow(NOW);
+  const nextChange = nextCustodyChange(NOW);
+  const weekendWarning = isWeekend(nextChange);
+  const el = document.getElementById('custodyNowCard');
+  el.innerHTML = `
+    <p class="hero-label">Custodia</p>
+    <p class="hero-main"><span class="hero-icon">${owner==='Papá' ? '👨' : '👩'}</span>Hoy Damián está con ${owner}</p>
+    <p class="hero-sub">Próximo cambio: ${longDateEs(nextChange)}</p>
+    ${weekendWarning ? `<div class="custody-note">⚠ Cambio en fin de semana, hora variable</div>` : ''}`;
+}
+renderCustodyNow();
+
+let custCalYear = NOW.getFullYear();
+let custCalMonth = NOW.getMonth();
+
+function custodyDecorate(date){
+  const owner = custodyOwnerForDay(date);
+  if(owner==='split1') return { className:'split' }; // mañana Mamá(izq)/tarde Papá(der) -> coral(izq)/sky(der)
+  if(owner==='split16'){
+    // día 16: mañana Papá, tarde Mamá -> invertimos el degradado
+    return { className:'split16' };
+  }
+  return { className: owner==='Papá' ? 'papa' : 'mama' };
+}
+
+function renderCustCal(){
+  renderMonthGrid(
+    document.getElementById('custCalGrid'),
+    document.getElementById('custCalTitle'),
+    custCalYear, custCalMonth,
+    custodyDecorate
+  );
+}
+document.getElementById('custCalPrev').addEventListener('click', ()=>{
+  custCalMonth--; if(custCalMonth<0){custCalMonth=11; custCalYear--;}
+  renderCustCal();
+});
+document.getElementById('custCalNext').addEventListener('click', ()=>{
+  custCalMonth++; if(custCalMonth>11){custCalMonth=0; custCalYear++;}
+  renderCustCal();
+});
+renderCustCal();
+
+})();
+</script>
+</body>
+</html>
