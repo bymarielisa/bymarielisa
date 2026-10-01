@@ -59,6 +59,15 @@
   --color-lilac: var(--lilac);
   --color-lilac-soft: var(--lilac-soft);
   --color-lilac-foreground: var(--lilac-foreground);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --color-teal-foreground: var(--teal-foreground);
+  --color-orange: var(--orange);
+  --color-orange-soft: var(--orange-soft);
+  --color-orange-foreground: var(--orange-foreground);
+  --color-sand: var(--sand);
+  --color-sand-soft: var(--sand-soft);
+  --color-sand-foreground: var(--sand-foreground);
 
   --shadow-card: 0 6px 20px -8px oklch(0.35 0.06 260 / 0.18);
   --shadow-pop: 0 10px 30px -10px oklch(0.35 0.06 260 / 0.28);
@@ -82,6 +91,16 @@
   --lilac: oklch(0.714 0.128 308);
   --lilac-soft: oklch(0.94 0.04 308);
   --lilac-foreground: oklch(0.99 0.01 308);
+  /* Asignaturas del horario de clase que no tienen hueco en los 5 acentos base */
+  --teal: oklch(0.78 0.13 195);
+  --teal-soft: oklch(0.94 0.05 195);
+  --teal-foreground: oklch(0.25 0.06 195);
+  --orange: oklch(0.78 0.15 55);
+  --orange-soft: oklch(0.94 0.06 55);
+  --orange-foreground: oklch(0.3 0.08 55);
+  --sand: oklch(0.75 0.07 75);
+  --sand-soft: oklch(0.94 0.03 75);
+  --sand-foreground: oklch(0.3 0.04 75);
 
   --background: oklch(0.994 0.008 91.5);
   --foreground: oklch(0.3 0.04 262);
@@ -111,6 +130,9 @@
     --coral-soft: oklch(0.38 0.08 23);
     --leaf-soft: oklch(0.36 0.07 167);
     --lilac-soft: oklch(0.37 0.06 308);
+    --teal-soft: oklch(0.36 0.06 195);
+    --orange-soft: oklch(0.37 0.07 55);
+    --sand-soft: oklch(0.34 0.04 75);
 
     --background: oklch(0.2 0.03 265);
     --foreground: oklch(0.96 0.01 90);

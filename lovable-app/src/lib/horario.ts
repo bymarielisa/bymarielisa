@@ -1,4 +1,9 @@
-import { CAMBIO_NATACION_A_LUNES, HORARIO_SEMANAL, type DiaHorario, type DiaSemana } from "@/data/horario";
+import {
+  CAMBIO_NATACION_A_LUNES,
+  HORARIO_SEMANAL,
+  type DiaHorario,
+  type DiaSemana,
+} from "@/data/horario";
 import { minutosDelDia, parseHora } from "./fechas";
 
 export type TipoBloque =
@@ -158,7 +163,11 @@ export interface EstadoAhora {
 export function estadoAhora(ahora: Date): EstadoAhora {
   const mes0 = ahora.getMonth();
   if (esVerano(mes0)) {
-    return { titulo: "¡Vacaciones de verano!", detalle: "No hay cole en julio ni agosto", icono: "☀️" };
+    return {
+      titulo: "¡Vacaciones de verano!",
+      detalle: "No hay cole en julio ni agosto",
+      icono: "☀️",
+    };
   }
   const dia = diaHorario(ahora);
   if (!dia) {

@@ -7,8 +7,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Tarjeta, TituloSeccion } from "@/components/Tarjeta";
+import { HorarioClase } from "@/components/HorarioClase";
 import { useNow } from "@/hooks/use-now";
 import { COLEGIO, HORARIO_SEMANAL } from "@/data/horario";
+import { CLASE_ASIGNATURAS } from "@/data/horarioClase";
 import {
   aplicanExtraescolares,
   bloquesDelDia,
@@ -17,15 +19,23 @@ import {
   estadoAhora,
   type Bloque,
 } from "@/lib/horario";
+import { asignaturaAhora } from "@/lib/horarioClase";
 import { formatoHora } from "@/lib/fechas";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Horario — DamiánFG" },
-      { name: "description", content: "Qué está haciendo Damián ahora mismo y su horario semanal en el CEIP María de Villota." },
+      {
+        name: "description",
+        content:
+          "Qué está haciendo Damián ahora mismo y su horario semanal en el CEIP María de Villota.",
+      },
       { property: "og:title", content: "Horario — DamiánFG" },
-      { property: "og:description", content: "Qué está haciendo Damián ahora mismo y su horario semanal." },
+      {
+        property: "og:description",
+        content: "Qué está haciendo Damián ahora mismo y su horario semanal.",
+      },
     ],
   }),
   component: HorarioPage,
@@ -52,6 +62,7 @@ function HorarioPage() {
   return (
     <>
       <TarjetaAhora now={now} />
+      <HorarioClase now={now} />
       <ListaSemanal now={now} />
     </>
   );
@@ -67,6 +78,8 @@ function TarjetaAhora({ now }: { now: Date | null }) {
     );
   }
   const estado = estadoAhora(now);
+  const claveClase = asignaturaAhora(now);
+  const claseAhora = claveClase && claveClase !== "PATIO" ? CLASE_ASIGNATURAS[claveClase] : null;
   return (
     <Tarjeta className="bg-damian">
       <div className="flex items-center justify-between">
@@ -87,6 +100,11 @@ function TarjetaAhora({ now }: { now: Date | null }) {
             </p>
           )}
           {estado.detalle && <p className="text-sm opacity-90">{estado.detalle}</p>}
+          {claseAhora && (
+            <p className="mt-1 text-sm font-bold opacity-90">
+              En clase toca: {claseAhora.icono} {claseAhora.nombre}
+            </p>
+          )}
           {estado.siguiente && (
             <p className="mt-1 text-xs font-bold opacity-80">
               Después: {estado.siguiente.titulo} ({hora(estado.siguiente.inicio)})
@@ -124,7 +142,13 @@ function ListaSemanal({ now }: { now: Date | null }) {
         </p>
       )}
 
-      <Accordion type="single" collapsible value={abierto} onValueChange={setAbierto} className="mt-3">
+      <Accordion
+        type="single"
+        collapsible
+        value={abierto}
+        onValueChange={setAbierto}
+        className="mt-3"
+      >
         {HORARIO_SEMANAL.map((dia) => {
           const esHoy = dia.dia === hoyDia;
           const bloques = bloquesDelDia(dia, fecha);
@@ -136,7 +160,9 @@ function ListaSemanal({ now }: { now: Date | null }) {
                 <div className="flex flex-1 items-center gap-3 text-left">
                   <span
                     className={`flex size-10 shrink-0 items-center justify-center rounded-full font-display text-lg font-extrabold ${
-                      esHoy ? "bg-sun text-sun-foreground" : "bg-secondary text-secondary-foreground"
+                      esHoy
+                        ? "bg-sun text-sun-foreground"
+                        : "bg-secondary text-secondary-foreground"
                     }`}
                   >
                     {dia.nombre.charAt(0)}
@@ -148,7 +174,8 @@ function ListaSemanal({ now }: { now: Date | null }) {
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {extras ? `⭐ ${dia.extraescolar}` : "Sin extraescolar"}
-                      {dia.natacion && extras && natacionHoy && " · 🏊 Natación"} · 🍎 {dia.merienda}
+                      {dia.natacion && extras && natacionHoy && " · 🏊 Natación"} · 🍎{" "}
+                      {dia.merienda}
                     </p>
                   </div>
                 </div>
@@ -167,7 +194,9 @@ function ListaSemanal({ now }: { now: Date | null }) {
                         <div className="flex items-baseline justify-between gap-2">
                           <p className="font-display font-bold">{b.titulo}</p>
                           <p className="shrink-0 text-xs font-extrabold tabular-nums">
-                            {b.inicio === b.fin ? hora(b.inicio) : `${hora(b.inicio)} – ${hora(b.fin)}`}
+                            {b.inicio === b.fin
+                              ? hora(b.inicio)
+                              : `${hora(b.inicio)} – ${hora(b.fin)}`}
                           </p>
                         </div>
                         {b.detalle && <p className="text-xs opacity-80">{b.detalle}</p>}

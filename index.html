@@ -203,6 +203,137 @@
   .timeline .t-label{color:var(--ink);font-weight:600;}
   .timeline .t-extra{display:block;color:var(--ink-soft);font-weight:600;font-size:0.85rem;}
 
+  /* Horario de clase */
+  .day-pills{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .day-pill{
+    flex:1;
+    border:none;
+    border-radius:999px;
+    padding:10px 0;
+    background:var(--cream);
+    color:var(--ink-soft);
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:0.95rem;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:background .15s ease, color .15s ease, transform .1s ease;
+  }
+  .day-pill.active{
+    background:var(--lilac);
+    color:#fff;
+    transform:translateY(-1px);
+  }
+  .class-slots{list-style:none;margin:0;padding:0;}
+  .class-slot{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:9px 0;
+  }
+  .class-slot .cs-time{
+    flex:0 0 auto;
+    min-width:52px;
+    font-weight:800;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    font-variant-numeric:tabular-nums;
+  }
+  .class-slot .cs-chip{
+    flex:1;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border:none;
+    text-align:left;
+    border-radius:var(--radius-sm);
+    padding:10px 14px;
+    font-family:'Nunito',sans-serif;
+    font-weight:800;
+    font-size:0.92rem;
+    color:#2b2430;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .class-slot .cs-chip:disabled{cursor:default;}
+  .class-slot.cs-now .cs-chip{box-shadow:0 0 0 3px var(--ink) inset;}
+  .class-slot.cs-now .cs-time{color:var(--ink);}
+  .class-slot.cs-patio .cs-chip,
+  .class-slot.cs-end .cs-chip{
+    background:transparent !important;
+    color:var(--ink-soft) !important;
+    font-weight:700;
+    font-style:italic;
+    padding:4px 14px;
+    font-size:0.82rem;
+    justify-content:center;
+    border:1px dashed var(--card-border);
+  }
+  .class-footnote{
+    margin:14px 0 0;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    line-height:1.4;
+  }
+  .sheet-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(58,50,71,0.45);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    z-index:100;
+  }
+  .sheet-overlay[hidden]{display:none;}
+  .sheet{
+    position:relative;
+    width:100%;
+    max-width:560px;
+    background:var(--card);
+    border-radius:26px 26px 0 0;
+    padding:10px 22px 28px;
+    box-shadow:0 -8px 24px rgba(0,0,0,0.25);
+    animation:sheet-up .2s ease;
+  }
+  @keyframes sheet-up{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .sheet-handle{
+    width:40px;height:4px;border-radius:4px;
+    background:var(--card-border);
+    margin:4px auto 14px;
+  }
+  .sheet-close{
+    position:absolute;
+    top:14px; right:18px;
+    background:none;border:none;
+    font-size:1.1rem;color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .sheet-icon{font-size:2rem;}
+  .sheet-title{
+    font-family:'Baloo 2',sans-serif;
+    font-size:1.2rem;
+    font-weight:700;
+    margin:10px 0 2px;
+  }
+  .sheet-teacher{
+    font-weight:700;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+  }
+  .sheet-desc{
+    font-size:0.95rem;
+    line-height:1.5;
+    margin:0;
+  }
+  @media (min-width:600px){
+    .sheet{ border-radius:26px; margin-bottom:40px; }
+  }
+
   /* Gastos */
   .summary-row{
     display:flex;
@@ -429,9 +560,21 @@
   <section id="view-horario" class="view active">
     <div id="nowCard" class="card card-hero"></div>
 
+    <h2 class="section-title">Horario de clase – 4 años A</h2>
+    <div id="classScheduleCard" class="card"></div>
+
     <h2 class="section-title">Semana</h2>
     <div id="weekList"></div>
   </section>
+
+  <!-- Modal / bottom sheet para el detalle de cada asignatura -->
+  <div id="subjectSheetOverlay" class="sheet-overlay" hidden>
+    <div class="sheet" id="subjectSheet" role="dialog" aria-modal="true" aria-labelledby="subjectSheetTitle">
+      <div class="sheet-handle"></div>
+      <button type="button" class="sheet-close" id="subjectSheetClose" aria-label="Cerrar">✕</button>
+      <div id="subjectSheetBody"></div>
+    </div>
+  </div>
 
   <!-- ================= GASTOS ================= -->
   <section id="view-gastos" class="view">
@@ -675,10 +818,15 @@ function renderNowCard(){
   const subLine = extras
     ? `Extraescolar de hoy: ${dayInfo.extra}${natacionHoy ? ' + Natación (17:30–18:00)' : ''}`
     : 'Sin extraescolares todavía este mes';
+  const claseKey = classSubjectAt(dow, minutesOfDay(NOW));
+  const claseLine = (claseKey && claseKey!=='PATIO')
+    ? `<p class="hero-sub">En clase toca: ${CLASS_SUBJECTS[claseKey].icon} ${CLASS_SUBJECTS[claseKey].name}</p>`
+    : '';
   el.innerHTML = `
     <p class="hero-label">Ahora mismo · ${dayInfo.name}</p>
     <p class="hero-main"><span class="hero-icon">${status.icon}</span>${status.text}</p>
-    <p class="hero-sub">${subLine}</p>`;
+    <p class="hero-sub">${subLine}</p>
+    ${claseLine}`;
 }
 
 function renderWeekList(){
@@ -714,6 +862,217 @@ function renderWeekList(){
   });
 }
 
+/* =========================================================
+   HORARIO DE CLASE — 4 años A (curso 2026-27)
+   ========================================================= */
+
+// Asignaturas/materias: color, icono, descripción y quién la imparte.
+// Para cambiar de profe o el texto de una asignatura, edita aquí su entrada.
+const CLASS_SUBJECTS = {
+  AREA1: {
+    name: 'Área 1',
+    label: 'Área 1 · Crecimiento en Armonía',
+    color: '#06D6A0', // leaf
+    icon: '🌱',
+    desc: 'Conocerse a sí mismo, emociones, autonomía (baño, comer, vestirse), hábitos de higiene y convivencia con los demás.',
+    teacher: 'Sara (tutora)',
+  },
+  AREA2: {
+    name: 'Área 2',
+    label: 'Área 2 · Descubrimiento y Exploración del Entorno',
+    color: '#6EC6FF', // sky
+    icon: '🔎',
+    desc: 'Números, formas, colores, clasificar, naturaleza, animales, estaciones y pequeños experimentos.',
+    teacher: 'Sara (tutora)',
+  },
+  AREA3: {
+    name: 'Área 3',
+    label: 'Área 3 · Comunicación y Representación de la Realidad',
+    color: '#FF6B6B', // coral
+    icon: '🎨',
+    desc: 'Lenguaje oral, iniciación a la lectoescritura, cuentos, dibujo y plástica, expresión corporal.',
+    teacher: 'Sara (tutora)',
+  },
+  INGLES: {
+    name: 'Inglés',
+    label: 'Inglés',
+    color: '#FFD166', // sun
+    icon: '🇬🇧',
+    desc: 'Clase de inglés del colegio bilingüe.',
+    teacher: 'Miss Pilar (Pilar Vera)',
+  },
+  MUSICA: {
+    name: 'Música',
+    label: 'Música',
+    color: '#3DD6C5', // turquesa
+    icon: '🎵',
+    desc: 'Clase de música.',
+    teacher: 'Alba',
+  },
+  PSICO: {
+    name: 'Psicomotricidad',
+    label: 'Psicomotricidad',
+    color: '#FF9F5B', // naranja
+    icon: '🤸',
+    desc: 'Psicomotricidad.',
+    teacher: 'Sara (tutora)',
+  },
+  MAE: {
+    name: 'MAE/Religión',
+    label: 'MAE / Religión',
+    color: '#C9A877', // arena
+    icon: '🕊️',
+    desc: 'Religión o Medidas de Atención Educativa (la alternativa a Religión), según lo elegido en la matrícula.',
+    teacher: 'Según matrícula',
+  },
+  PATIO: {
+    name: 'Patio',
+    label: 'Patio',
+    color: '#E4DFD2',
+    icon: '🌳',
+    desc: 'Recreo de 11:15 a 11:45.',
+    teacher: null,
+  },
+};
+
+// Horario oficial de clase, curso 2026-27 (1=lunes … 5=viernes).
+// Para cambiar una franja, edita la entrada correspondiente (hora + clave de CLASS_SUBJECTS).
+const CLASS_SCHEDULE = {
+  1: [ // Lunes
+    { time:'09:00', subject:'AREA1' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'AREA1' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'INGLES' },
+    { time:'12:30', subject:'AREA3' },
+    { time:'13:15', subject:'MAE' },
+  ],
+  2: [ // Martes
+    { time:'09:00', subject:'INGLES' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'AREA1' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'AREA2' },
+    { time:'12:30', subject:'INGLES' },
+    { time:'13:15', subject:'AREA3' },
+  ],
+  3: [ // Miércoles
+    { time:'09:00', subject:'AREA1' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'MUSICA' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'AREA2' },
+    { time:'12:30', subject:'INGLES' },
+    { time:'13:15', subject:'AREA3' },
+  ],
+  4: [ // Jueves
+    { time:'09:00', subject:'AREA1' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'AREA3' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'AREA1' },
+    { time:'12:30', subject:'INGLES' },
+    { time:'13:15', subject:'AREA2' },
+  ],
+  5: [ // Viernes
+    { time:'09:00', subject:'AREA1' },
+    { time:'09:45', subject:'AREA2' },
+    { time:'10:30', subject:'MAE' },
+    { time:'11:15', subject:'PATIO' },
+    { time:'11:45', subject:'AREA1' },
+    { time:'12:30', subject:'PSICO' },
+    { time:'13:15', subject:'AREA3' },
+  ],
+};
+
+const CLASS_SLOT_TIMES = ['09:00','09:45','10:30','11:15','11:45','12:30','13:15','14:00'];
+
+let selectedClassDay = (NOW.getDay() >= 1 && NOW.getDay() <= 5) ? NOW.getDay() : 1;
+
+// Devuelve la asignatura (clave de CLASS_SUBJECTS) que toca en un día+hora dados, o null.
+function classSubjectAt(dayId, nowMin){
+  const slots = CLASS_SCHEDULE[dayId];
+  if(!slots) return null;
+  if(nowMin < parseHM(CLASS_SLOT_TIMES[0]) || nowMin >= parseHM('14:00')) return null;
+  for(let i=0;i<slots.length;i++){
+    const start = parseHM(CLASS_SLOT_TIMES[i]);
+    const end = parseHM(CLASS_SLOT_TIMES[i+1]);
+    if(nowMin >= start && nowMin < end) return slots[i].subject;
+  }
+  return null;
+}
+
+function renderClassScheduleCard(){
+  const card = document.getElementById('classScheduleCard');
+  const todayDow = NOW.getDay();
+  const slots = CLASS_SCHEDULE[selectedClassDay] || [];
+  const nowMin = minutesOfDay(NOW);
+
+  const pills = ['L','M','X','J','V'].map((letter, i)=>{
+    const dayId = i+1;
+    return `<button type="button" class="day-pill${dayId===selectedClassDay ? ' active' : ''}" data-day="${dayId}">${letter}</button>`;
+  }).join('');
+
+  const rows = slots.map((slot, i)=>{
+    const subj = CLASS_SUBJECTS[slot.subject];
+    const end = CLASS_SLOT_TIMES[i+1];
+    const isNow = selectedClassDay===todayDow && nowMin>=parseHM(slot.time) && nowMin<parseHM(end);
+    const isPatio = slot.subject==='PATIO';
+    return `
+      <li class="class-slot${isNow ? ' cs-now' : ''}${isPatio ? ' cs-patio' : ''}">
+        <span class="cs-time">${slot.time}</span>
+        <button type="button" class="cs-chip" style="background:${subj.color}" data-subject="${slot.subject}" ${isPatio ? 'disabled' : ''}>
+          <span>${subj.icon}</span><span>${subj.name}</span>
+        </button>
+      </li>`;
+  }).join('');
+
+  const endRow = `
+    <li class="class-slot cs-end">
+      <span class="cs-time">14:00</span>
+      <button type="button" class="cs-chip" disabled>
+        <span>🍽️</span><span>Comedor / Casa</span>
+      </button>
+    </li>`;
+
+  card.innerHTML = `
+    <div class="day-pills">${pills}</div>
+    <ul class="class-slots">${rows}${endRow}</ul>
+    <p class="class-footnote">Las áreas son las del currículo oficial de Infantil (LOMLOE). En clase se trabajan de forma global: el horario marca el foco de cada franja.</p>`;
+
+  card.querySelectorAll('.day-pill').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      selectedClassDay = Number(btn.dataset.day);
+      renderClassScheduleCard();
+    });
+  });
+  card.querySelectorAll('.cs-chip[data-subject]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openSubjectSheet(btn.dataset.subject));
+  });
+}
+
+function openSubjectSheet(key){
+  const subj = CLASS_SUBJECTS[key];
+  if(!subj) return;
+  document.getElementById('subjectSheetBody').innerHTML = `
+    <p class="sheet-icon">${subj.icon}</p>
+    <p class="sheet-title">${subj.label}</p>
+    ${subj.teacher ? `<p class="sheet-teacher">Imparte: ${subj.teacher}</p>` : ''}
+    <p class="sheet-desc">${subj.desc}</p>`;
+  document.getElementById('subjectSheetOverlay').hidden = false;
+}
+function closeSubjectSheet(){
+  document.getElementById('subjectSheetOverlay').hidden = true;
+}
+document.getElementById('subjectSheetClose').addEventListener('click', closeSubjectSheet);
+document.getElementById('subjectSheetOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'subjectSheetOverlay') closeSubjectSheet();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') closeSubjectSheet();
+});
+
+renderClassScheduleCard();
 renderNowCard();
 renderWeekList();
 
