@@ -1,9 +1,4 @@
-import {
-  CAMBIO_NATACION_A_LUNES,
-  HORARIO_SEMANAL,
-  type DiaHorario,
-  type DiaSemana,
-} from "@/data/horario";
+import { HORARIO_SEMANAL, type ActividadFueraDelCole, type DiaHorario } from "@/data/horario";
 import { minutosDelDia, parseHora } from "./fechas";
 
 export type TipoBloque =
@@ -17,7 +12,7 @@ export type TipoBloque =
   | "extraescolar"
   | "salida"
   | "camino"
-  | "natacion";
+  | "fuera-del-cole";
 
 export interface Bloque {
   tipo: TipoBloque;
@@ -40,16 +35,24 @@ export const esVerano = (mes0: number) => mes0 === 6 || mes0 === 7;
 export const diaHorario = (fecha: Date): DiaHorario | undefined =>
   HORARIO_SEMANAL.find((d) => d.dia === fecha.getDay());
 
-/** Día de la semana en el que toca natación: lunes desde el 1 nov 2026, miércoles antes */
-export const diaActivoNatacion = (fecha: Date): DiaSemana =>
-  fecha >= CAMBIO_NATACION_A_LUNES ? 1 : 3;
+/** Actividad fuera del cole de un día (natación, rugby…) si está vigente en esa fecha, o undefined */
+export function actividadFueraDelColeHoy(
+  dia: DiaHorario,
+  fecha: Date,
+): ActividadFueraDelCole | undefined {
+  const act = dia.actividadFueraDelCole;
+  if (!act) return undefined;
+  if (act.desde && fecha < act.desde) return undefined;
+  if (act.hasta && fecha >= act.hasta) return undefined;
+  return act;
+}
 
 /** Construye la línea de tiempo completa de un día lectivo según la fecha */
 export function bloquesDelDia(dia: DiaHorario, fecha: Date): Bloque[] {
   const mes0 = fecha.getMonth();
   const corta = esJornadaCorta(mes0);
   const extras = aplicanExtraescolares(mes0);
-  const natacionHoy = dia.dia === diaActivoNatacion(fecha);
+  const actividad = extras ? actividadFueraDelColeHoy(dia, fecha) : undefined;
 
   const b: Bloque[] = [
     {
@@ -128,22 +131,22 @@ export function bloquesDelDia(dia: DiaHorario, fecha: Date): Bloque[] {
 
   b.push({ tipo: "salida", titulo: "Salida del cole", inicio: "17:00", fin: "17:00", icono: "🏠" });
 
-  if (dia.natacion && extras && natacionHoy) {
+  if (actividad) {
     b.push(
       {
         tipo: "camino",
-        titulo: "Camino a natación",
+        titulo: `Camino a ${actividad.nombre.toLowerCase()}`,
         inicio: "17:00",
-        fin: dia.natacion.inicio,
+        fin: actividad.inicio,
         icono: "🚶",
       },
       {
-        tipo: "natacion",
-        titulo: "Natación",
-        inicio: dia.natacion.inicio,
-        fin: dia.natacion.fin,
-        detalle: dia.natacion.lugar,
-        icono: "🏊",
+        tipo: "fuera-del-cole",
+        titulo: actividad.nombre,
+        inicio: actividad.inicio,
+        fin: actividad.fin,
+        detalle: `${actividad.lugar} (fuera del cole)`,
+        icono: actividad.icono,
       },
     );
   }

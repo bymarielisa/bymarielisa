@@ -707,31 +707,45 @@ navButtons.forEach(btn=>{
    SECCIÓN 1: HORARIO
    ========================================================= */
 
+// A partir de esta fecha la natación pasa de los miércoles a los lunes (17:30–18:00).
+// Para el siguiente cambio de día de natación, añade otra fecha aquí y ajusta el from/until de abajo.
+const NATACION_CAMBIO = new Date(2026, 10, 1); // 1 de noviembre de 2026
+
 // Datos por día de la semana (1=lunes ... 5=viernes).
 // Para añadir/cambiar una extraescolar o merienda, edita este array.
+// "offsite" es una actividad fuera del cole después de la extraescolar normal (natación, rugby…):
+// id/name/icon/start/end/location, y opcionalmente "from"/"until" (Date) si solo aplica desde/hasta cierta fecha.
 const WEEKDAYS = [
-  { id:1, name:'Lunes',     extra:'Robótica', merienda:'Fruta', natacion:true },
-  { id:2, name:'Martes',    extra:'Inglés',   merienda:'Lácteos o cereales' },
-  { id:3, name:'Miércoles', extra:'Robótica', merienda:'Fruta', natacion:true },
-  { id:4, name:'Jueves',    extra:'Inglés',   merienda:'Bocadillo o sándwich' },
+  { id:1, name:'Lunes',     extra:'Música, Arte y Psicomotricidad', merienda:'Fruta',
+    offsite:{ id:'natacion', name:'Natación', icon:'🏊', start:'17:30', end:'18:00', location:'Polideportivo', from:NATACION_CAMBIO } },
+  { id:2, name:'Martes',    extra:'Inglés', merienda:'Lácteos o cereales',
+    offsite:{ id:'rugby', name:'Rugby', icon:'🏉', start:'17:30', end:'19:00', location:'Campo de las Leonas' } },
+  { id:3, name:'Miércoles', extra:'Música, Arte y Psicomotricidad', merienda:'Fruta',
+    offsite:{ id:'natacion', name:'Natación', icon:'🏊', start:'17:30', end:'18:00', location:'Polideportivo', until:NATACION_CAMBIO } },
+  { id:4, name:'Jueves',    extra:'Inglés', merienda:'Bocadillo o sándwich',
+    offsite:{ id:'rugby', name:'Rugby', icon:'🏉', start:'17:30', end:'19:00', location:'Campo de las Leonas' } },
   { id:5, name:'Viernes',   extra:'Minichef', merienda:'Libre' },
 ];
 
 // true en septiembre y junio (jornada reducida / "adelantada" ~1h)
 function isShortSchedule(month){ return month===8 || month===5; } // 0-index: 8=sept, 5=junio
-// las extraescolares regulares (y la natación) no aplican en septiembre
+// las extraescolares regulares (y las actividades fuera del cole) no aplican en septiembre
 function extrasApply(month){ return month!==8; }
 
-// A partir de esta fecha la natación pasa de los miércoles a los lunes (17:30–18:00).
-// Para el siguiente cambio de día de natación, añade otra fecha aquí y ajusta diaActivoNatacion.
-const NATACION_CAMBIO = new Date(2026, 10, 1); // 1 de noviembre de 2026
-function diaActivoNatacion(date){ return date >= NATACION_CAMBIO ? 1 : 3; }
+// Devuelve la actividad fuera del cole de hoy (natación, rugby…) si el día la tiene y está vigente, o null.
+function offsiteToday(dayInfo, date){
+  const os = dayInfo.offsite;
+  if(!os) return null;
+  if(os.from && date < os.from) return null;
+  if(os.until && date >= os.until) return null;
+  return os;
+}
 
 // Construye la lista de bloques de la línea de tiempo para un día concreto.
 function buildDayBlocks(dayInfo, month){
   const short = isShortSchedule(month);
   const extras = extrasApply(month);
-  const natacionHoy = dayInfo.natacion && dayInfo.id === diaActivoNatacion(NOW);
+  const offsite = extras ? offsiteToday(dayInfo, NOW) : null;
   const blocks = [];
   blocks.push({label:'Entrada y acogida', start:'08:55', end:'09:05'});
   blocks.push({label:'Clases', start:'09:30', end:'11:15'});
@@ -745,11 +759,6 @@ function buildDayBlocks(dayInfo, month){
     if(extras){
       blocks.push({label:'Extraescolar', start:'16:00', end:'17:00', extra:dayInfo.extra});
     }
-    blocks.push({label:'Salida del cole', start:'17:00', end:'17:00'});
-    if(natacionHoy && extras){
-      blocks.push({label:'Camino a natación', start:'17:00', end:'17:30'});
-      blocks.push({label:'Natación', start:'17:30', end:'18:00', extra:'Polideportivo (fuera del cole)'});
-    }
   } else {
     blocks.push({label:'Clases', start:'11:45', end:'13:00'});
     blocks.push({label:'Comedor', start:'13:05', end:'13:40'});
@@ -759,11 +768,11 @@ function buildDayBlocks(dayInfo, month){
     } else {
       blocks.push({label:'Tardes de cole', start:'13:40', end:'17:00'});
     }
-    blocks.push({label:'Salida del cole', start:'17:00', end:'17:00'});
-    if(natacionHoy && extras){
-      blocks.push({label:'Camino a natación', start:'17:00', end:'17:30'});
-      blocks.push({label:'Natación', start:'17:30', end:'18:00', extra:'Polideportivo (fuera del cole)'});
-    }
+  }
+  blocks.push({label:'Salida del cole', start:'17:00', end:'17:00'});
+  if(offsite){
+    blocks.push({label:`Camino a ${offsite.name.toLowerCase()}`, start:'17:00', end:offsite.start});
+    blocks.push({label:offsite.name, start:offsite.start, end:offsite.end, extra:`${offsite.location} (fuera del cole)`});
   }
   return blocks;
 }
@@ -772,7 +781,7 @@ function buildDayBlocks(dayInfo, month){
 function computeNowStatus(dayInfo, month, nowMin){
   const short = isShortSchedule(month);
   const extras = extrasApply(month);
-  const natacionHoy = dayInfo.natacion && dayInfo.id === diaActivoNatacion(NOW);
+  const offsite = extras ? offsiteToday(dayInfo, NOW) : null;
   const entrada = parseHM('08:55');
   const clase1Start = parseHM('09:30');
   const recreoStart = parseHM('11:15');
@@ -781,8 +790,6 @@ function computeNowStatus(dayInfo, month, nowMin){
   const comedorEnd = short ? parseHM('13:40') : parseHM('14:40');
   const extraStart = parseHM('16:00');
   const extraEnd = parseHM('17:00');
-  const natStart = parseHM('17:30');
-  const natEnd = parseHM('18:00');
 
   if(nowMin < entrada) return { text:'Antes de entrar al cole', icon:'⏰' };
   if(nowMin < clase1Start) return { text:'Acogida', icon:'🎒' };
@@ -793,9 +800,11 @@ function computeNowStatus(dayInfo, month, nowMin){
   if(extras && nowMin < extraStart) return { text:'Recogida (o juegos hasta la salida general)', icon:'🧸' };
   if(!extras && nowMin < parseHM('17:00')) return { text:'Recogida (o juegos hasta la salida general)', icon:'🧸' };
   if(extras && nowMin < extraEnd) return { text:`Extraescolar: ${dayInfo.extra}`, icon:'🎨' };
-  if(natacionHoy && extras){
-    if(nowMin < natStart) return { text:'Camino a natación', icon:'🚗' };
-    if(nowMin < natEnd) return { text:'Natación (polideportivo)', icon:'🏊' };
+  if(offsite){
+    const osStart = parseHM(offsite.start);
+    const osEnd = parseHM(offsite.end);
+    if(nowMin < osStart) return { text:`Camino a ${offsite.name.toLowerCase()}`, icon:'🚗' };
+    if(nowMin < osEnd) return { text:`${offsite.name} (${offsite.location})`, icon:offsite.icon };
     return { text:'Ya salió del cole', icon:'🌙' };
   }
   return { text:'Ya salió del cole', icon:'🌙' };
@@ -814,9 +823,9 @@ function renderNowCard(){
   const dayInfo = WEEKDAYS.find(d=>d.id===dow);
   const status = computeNowStatus(dayInfo, NOW.getMonth(), minutesOfDay(NOW));
   const extras = extrasApply(NOW.getMonth());
-  const natacionHoy = extras && dayInfo.natacion && dayInfo.id === diaActivoNatacion(NOW);
+  const offsite = extras ? offsiteToday(dayInfo, NOW) : null;
   const subLine = extras
-    ? `Extraescolar de hoy: ${dayInfo.extra}${natacionHoy ? ' + Natación (17:30–18:00)' : ''}`
+    ? `Extraescolar de hoy: ${dayInfo.extra}${offsite ? ` + ${offsite.name} (${offsite.start}–${offsite.end})` : ''}`
     : 'Sin extraescolares todavía este mes';
   const claseKey = classSubjectAt(dow, minutesOfDay(NOW));
   const claseLine = (claseKey && claseKey!=='PATIO')

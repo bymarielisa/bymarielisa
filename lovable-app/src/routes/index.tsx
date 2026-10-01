@@ -12,9 +12,9 @@ import { useNow } from "@/hooks/use-now";
 import { COLEGIO, HORARIO_SEMANAL } from "@/data/horario";
 import { CLASE_ASIGNATURAS } from "@/data/horarioClase";
 import {
+  actividadFueraDelColeHoy,
   aplicanExtraescolares,
   bloquesDelDia,
-  diaActivoNatacion,
   esJornadaCorta,
   estadoAhora,
   type Bloque,
@@ -52,7 +52,7 @@ const TONO_BLOQUE: Record<Bloque["tipo"], string> = {
   extraescolar: "bg-sun-soft text-sun-foreground",
   salida: "bg-secondary text-secondary-foreground",
   camino: "bg-secondary text-secondary-foreground",
-  natacion: "bg-sky-soft text-sky-foreground",
+  "fuera-del-cole": "bg-sky-soft text-sky-foreground",
 };
 
 const hora = (h: string) => h.replace(/^0/, "");
@@ -153,7 +153,7 @@ function ListaSemanal({ now }: { now: Date | null }) {
           const esHoy = dia.dia === hoyDia;
           const bloques = bloquesDelDia(dia, fecha);
           const extras = aplicanExtraescolares(mes0);
-          const natacionHoy = dia.dia === diaActivoNatacion(fecha);
+          const actividad = extras ? actividadFueraDelColeHoy(dia, fecha) : undefined;
           return (
             <AccordionItem key={dia.dia} value={String(dia.dia)} className="border-b-0 py-1">
               <AccordionTrigger className="min-h-14 rounded-2xl px-3 hover:bg-secondary hover:no-underline">
@@ -174,8 +174,7 @@ function ListaSemanal({ now }: { now: Date | null }) {
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {extras ? `⭐ ${dia.extraescolar}` : "Sin extraescolar"}
-                      {dia.natacion && extras && natacionHoy && " · 🏊 Natación"} · 🍎{" "}
-                      {dia.merienda}
+                      {actividad && ` · ${actividad.icono} ${actividad.nombre}`} · 🍎 {dia.merienda}
                     </p>
                   </div>
                 </div>
