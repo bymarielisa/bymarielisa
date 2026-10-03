@@ -40,7 +40,7 @@ export const GASTOS: MesGastos[] = [
       { nombre: "Rugby", importe: 32 },
       { nombre: "Matrícula Rugby", importe: 50 },
       { nombre: "Minichef", importe: 19 },
-      { nombre: "Material anual", importe: 16.5 },
+      { nombre: "Minichef — material (pago único al empezar)", importe: 16.5 },
       { nombre: "Natación", importe: 8.9 },
     ],
   },
