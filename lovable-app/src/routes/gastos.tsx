@@ -1,20 +1,61 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tarjeta, TituloSeccion } from "@/components/Tarjeta";
-import { GASTOS, formatEuros, totalMes } from "@/data/gastos";
+import { GASTOS, GASTOS_EXTRA, formatEuros, totalGastosExtra, totalMes } from "@/data/gastos";
+
+const EXTRA_PAGADOS_KEY = "damianfg-gastos-extra-pagados";
+
+/** Qué gastos extra están marcados como pagados. Se guarda en este navegador (localStorage). */
+function useExtraPagados() {
+  const [pagados, setPagados] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const guardado = localStorage.getItem(EXTRA_PAGADOS_KEY);
+      if (guardado) setPagados(new Set(JSON.parse(guardado) as string[]));
+    } catch {
+      // localStorage no disponible (modo privado, etc.): se ignora y queda sin marcar
+    }
+  }, []);
+
+  const marcar = (id: string, pagado: boolean) => {
+    setPagados((anterior) => {
+      const siguiente = new Set(anterior);
+      if (pagado) siguiente.add(id);
+      else siguiente.delete(id);
+      try {
+        localStorage.setItem(EXTRA_PAGADOS_KEY, JSON.stringify([...siguiente]));
+      } catch {
+        // idem
+      }
+      return siguiente;
+    });
+  };
+
+  return { pagados, marcar };
+}
 
 export const Route = createFileRoute("/gastos")({
   head: () => ({
     meta: [
       { title: "Gastos — DamiánFG" },
-      { name: "description", content: "Presupuesto mensual del cole de Damián: comedor, extraescolares y reparto entre Papá y Mamá." },
+      {
+        name: "description",
+        content:
+          "Presupuesto mensual del cole de Damián: comedor, extraescolares y reparto entre Papá y Mamá.",
+      },
       { property: "og:title", content: "Gastos — DamiánFG" },
-      { property: "og:description", content: "Presupuesto mensual del cole y reparto entre Papá y Mamá." },
+      {
+        property: "og:description",
+        content: "Presupuesto mensual del cole y reparto entre Papá y Mamá.",
+      },
     ],
   }),
   component: GastosPage,
@@ -22,8 +63,10 @@ export const Route = createFileRoute("/gastos")({
 
 function GastosPage() {
   const totales = GASTOS.map(totalMes);
-  const acumulado = totales.reduce((s, t) => s + t, 0);
+  const extraTotal = totalGastosExtra();
+  const acumulado = totales.reduce((s, t) => s + t, 0) + extraTotal;
   const media = totales.length ? acumulado / totales.length : 0;
+  const { pagados, marcar } = useExtraPagados();
 
   return (
     <>
@@ -31,12 +74,16 @@ function GastosPage() {
         <TituloSeccion emoji="🐷">Resumen del curso</TituloSeccion>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-card/40 p-3">
-            <p className="text-xs font-extrabold uppercase tracking-wide opacity-80">Total acumulado</p>
+            <p className="text-xs font-extrabold uppercase tracking-wide opacity-80">
+              Total acumulado
+            </p>
             <p className="font-display text-2xl font-extrabold">{formatEuros(acumulado)}</p>
             <p className="text-xs opacity-80">{GASTOS.length} meses</p>
           </div>
           <div className="rounded-2xl bg-card/40 p-3">
-            <p className="text-xs font-extrabold uppercase tracking-wide opacity-80">Media mensual</p>
+            <p className="text-xs font-extrabold uppercase tracking-wide opacity-80">
+              Media mensual
+            </p>
             <p className="font-display text-2xl font-extrabold">{formatEuros(media)}</p>
             <p className="text-xs opacity-80">{formatEuros(media / 2)} cada uno</p>
           </div>
@@ -77,11 +124,15 @@ function GastosPage() {
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <div className="rounded-2xl bg-sky-soft p-3 text-sky-foreground">
                       <p className="text-xs font-extrabold">👨 Papá paga</p>
-                      <p className="font-display text-xl font-extrabold tabular-nums">{formatEuros(total / 2)}</p>
+                      <p className="font-display text-xl font-extrabold tabular-nums">
+                        {formatEuros(total / 2)}
+                      </p>
                     </div>
                     <div className="rounded-2xl bg-coral-soft p-3">
                       <p className="text-xs font-extrabold">👩 Mamá paga</p>
-                      <p className="font-display text-xl font-extrabold tabular-nums">{formatEuros(total / 2)}</p>
+                      <p className="font-display text-xl font-extrabold tabular-nums">
+                        {formatEuros(total / 2)}
+                      </p>
                     </div>
                   </div>
                 </AccordionContent>
@@ -89,6 +140,44 @@ function GastosPage() {
             );
           })}
         </Accordion>
+      </Tarjeta>
+
+      <Tarjeta>
+        <TituloSeccion emoji="🧦">Gastos extras</TituloSeccion>
+        <ul className="mt-2 divide-y divide-border">
+          {GASTOS_EXTRA.map((gasto) => {
+            const pagado = pagados.has(gasto.id);
+            return (
+              <li key={gasto.id} className="flex items-center gap-3 py-3">
+                <Checkbox
+                  checked={pagado}
+                  onCheckedChange={(valor) => marcar(gasto.id, valor === true)}
+                  aria-label={`Marcar "${gasto.nombre}" como pagado`}
+                />
+                <span
+                  className={`flex-1 text-sm font-semibold ${pagado ? "text-muted-foreground line-through" : ""}`}
+                >
+                  {gasto.nombre}
+                </span>
+                <span className="font-bold tabular-nums">{formatEuros(gasto.importe)}</span>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-2xl bg-sky-soft p-3 text-sky-foreground">
+            <p className="text-xs font-extrabold">👨 Papá paga</p>
+            <p className="font-display text-xl font-extrabold tabular-nums">
+              {formatEuros(extraTotal / 2)}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-coral-soft p-3">
+            <p className="text-xs font-extrabold">👩 Mamá paga</p>
+            <p className="font-display text-xl font-extrabold tabular-nums">
+              {formatEuros(extraTotal / 2)}
+            </p>
+          </div>
+        </div>
       </Tarjeta>
     </>
   );

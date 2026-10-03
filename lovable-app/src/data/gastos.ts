@@ -36,7 +36,9 @@ export const GASTOS: MesGastos[] = [
     conceptos: [
       { nombre: COMEDOR, importe: 63 },
       { nombre: "Inglés", importe: 38 },
-      { nombre: "Robótica", importe: 40.5 },
+      { nombre: "Multideporte", importe: 0 },
+      { nombre: "Rugby", importe: 32 },
+      { nombre: "Matrícula Rugby", importe: 50 },
       { nombre: "Minichef", importe: 19 },
       { nombre: "Material anual", importe: 16.5 },
       { nombre: "Natación", importe: 8.9 },
@@ -48,7 +50,9 @@ export const GASTOS: MesGastos[] = [
     conceptos: [
       { nombre: COMEDOR, importe: 57 },
       { nombre: "Inglés", importe: 38 },
-      { nombre: "Robótica", importe: 40.5 },
+      { nombre: "Multideporte", importe: 0 },
+      { nombre: "Rugby", importe: 32 },
+      { nombre: "Matrícula Rugby", importe: 50 },
       { nombre: "Minichef", importe: 19 },
       { nombre: "Natación", importe: 8.9 },
     ],
@@ -59,7 +63,8 @@ export const GASTOS: MesGastos[] = [
     conceptos: [
       { nombre: COMEDOR, importe: 42 },
       { nombre: "Inglés", importe: 38 },
-      { nombre: "Robótica", importe: 40.5 },
+      { nombre: "Multideporte", importe: 0 },
+      { nombre: "Rugby", importe: 32 },
       { nombre: "Minichef", importe: 19 },
       { nombre: "Natación", importe: 8.9 },
     ],
@@ -70,7 +75,8 @@ export const GASTOS: MesGastos[] = [
     conceptos: [
       { nombre: COMEDOR, importe: 45 },
       { nombre: "Inglés", importe: 38 },
-      { nombre: "Robótica", importe: 40.5 },
+      { nombre: "Multideporte", importe: 0 },
+      { nombre: "Rugby", importe: 32 },
       { nombre: "Minichef", importe: 19 },
       { nombre: "Natación", importe: 8.9 },
     ],
@@ -81,13 +87,32 @@ export const GASTOS: MesGastos[] = [
     conceptos: [
       { nombre: COMEDOR, importe: 54 },
       { nombre: "Inglés", importe: 38 },
-      { nombre: "Robótica", importe: 40.5 },
+      { nombre: "Multideporte", importe: 0 },
+      { nombre: "Rugby", importe: 32 },
       { nombre: "Minichef", importe: 19 },
       { nombre: "Natación", importe: 8.9 },
     ],
   },
   // 👉 Añade aquí el siguiente mes (Marzo 2027, …)
 ];
+
+/**
+ * Gastos puntuales (no mensuales), con checklist de pagado/pendiente.
+ * El estado de "pagado" se guarda en este navegador (localStorage), no es compartido.
+ * Para añadir el siguiente gasto extra, copia un objeto y cambia id/nombre/importe.
+ */
+export interface GastoExtra {
+  id: string;
+  nombre: string;
+  importe: number;
+}
+
+export const GASTOS_EXTRA: GastoExtra[] = [
+  { id: "equipo-rugby-2026", nombre: "Zapatillas, protector bucal y calcetines", importe: 26.97 },
+];
+
+export const totalGastosExtra = () =>
+  Math.round(GASTOS_EXTRA.reduce((s, g) => s + g.importe, 0) * 100) / 100;
 
 export const totalMes = (mes: MesGastos) =>
   Math.round(mes.conceptos.reduce((s, c) => s + c.importe, 0) * 100) / 100;

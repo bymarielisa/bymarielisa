@@ -43,7 +43,7 @@ export const HORARIO_SEMANAL: DiaHorario[] = [
   {
     dia: 1,
     nombre: "Lunes",
-    extraescolar: "Música, Arte y Psicomotricidad",
+    extraescolar: "Multideporte",
     merienda: "Fruta",
     actividadFueraDelCole: {
       nombre: "Natación",
@@ -70,7 +70,7 @@ export const HORARIO_SEMANAL: DiaHorario[] = [
   {
     dia: 3,
     nombre: "Miércoles",
-    extraescolar: "Música, Arte y Psicomotricidad",
+    extraescolar: "Multideporte",
     merienda: "Fruta",
     actividadFueraDelCole: {
       nombre: "Natación",

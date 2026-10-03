@@ -393,6 +393,19 @@
   .split-pill.mama{background:var(--coral);}
   .split-pill small{display:block;font-weight:600;font-size:0.72rem;opacity:0.9;margin-top:2px;}
 
+  .extra-list{list-style:none;margin:0 0 4px;padding:0;}
+  .extra-item{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 0;border-top:1px dashed var(--card-border);
+  }
+  .extra-item:first-child{border-top:none;}
+  .extra-item input[type=checkbox]{
+    width:20px;height:20px;flex:0 0 auto;accent-color:var(--leaf);cursor:pointer;
+  }
+  .extra-item .concept{flex:1;font-weight:600;color:var(--ink);cursor:pointer;}
+  .extra-item .amount{font-weight:700;color:var(--ink-soft);}
+  .extra-item.paid .concept{text-decoration:line-through;color:var(--ink-soft);}
+
   /* Calendario: recordatorios */
   .reminder-month{margin-bottom:6px;}
   .reminder-month h4{
@@ -594,6 +607,9 @@
 
     <h2 class="section-title">Meses</h2>
     <div id="monthsList"></div>
+
+    <h2 class="section-title">Gastos extras</h2>
+    <div id="extraGastosCard" class="card"></div>
   </section>
 
   <!-- ================= CALENDARIO ================= -->
@@ -716,11 +732,11 @@ const NATACION_CAMBIO = new Date(2026, 10, 1); // 1 de noviembre de 2026
 // "offsite" es una actividad fuera del cole después de la extraescolar normal (natación, rugby…):
 // id/name/icon/start/end/location, y opcionalmente "from"/"until" (Date) si solo aplica desde/hasta cierta fecha.
 const WEEKDAYS = [
-  { id:1, name:'Lunes',     extra:'Música, Arte y Psicomotricidad', merienda:'Fruta',
+  { id:1, name:'Lunes',     extra:'Multideporte', merienda:'Fruta',
     offsite:{ id:'natacion', name:'Natación', icon:'🏊', start:'17:30', end:'18:00', location:'Polideportivo', from:NATACION_CAMBIO } },
   { id:2, name:'Martes',    extra:'Inglés', merienda:'Lácteos o cereales',
     offsite:{ id:'rugby', name:'Rugby', icon:'🏉', start:'17:30', end:'19:00', location:'Campo de las Leonas' } },
-  { id:3, name:'Miércoles', extra:'Música, Arte y Psicomotricidad', merienda:'Fruta',
+  { id:3, name:'Miércoles', extra:'Multideporte', merienda:'Fruta',
     offsite:{ id:'natacion', name:'Natación', icon:'🏊', start:'17:30', end:'18:00', location:'Polideportivo', until:NATACION_CAMBIO } },
   { id:4, name:'Jueves',    extra:'Inglés', merienda:'Bocadillo o sándwich',
     offsite:{ id:'rugby', name:'Rugby', icon:'🏉', start:'17:30', end:'19:00', location:'Campo de las Leonas' } },
@@ -1103,7 +1119,9 @@ const MONTHS = [
   { name:'Octubre 2026', items:[
       {c:'Comedor María de Villota', v:63},
       {c:'Inglés', v:38},
-      {c:'Robótica', v:40.50},
+      {c:'Multideporte', v:0},
+      {c:'Rugby', v:32},
+      {c:'Matrícula Rugby', v:50},
       {c:'Minichef', v:19},
       {c:'Material anual', v:16.50},
       {c:'Natación', v:8.90},
@@ -1111,32 +1129,43 @@ const MONTHS = [
   { name:'Noviembre 2026', items:[
       {c:'Comedor María de Villota', v:57},
       {c:'Inglés', v:38},
-      {c:'Robótica', v:40.50},
+      {c:'Multideporte', v:0},
+      {c:'Rugby', v:32},
+      {c:'Matrícula Rugby', v:50},
       {c:'Minichef', v:19},
       {c:'Natación', v:8.90},
     ]},
   { name:'Diciembre 2026', items:[
       {c:'Comedor María de Villota', v:42},
       {c:'Inglés', v:38},
-      {c:'Robótica', v:40.50},
+      {c:'Multideporte', v:0},
+      {c:'Rugby', v:32},
       {c:'Minichef', v:19},
       {c:'Natación', v:8.90},
     ]},
   { name:'Enero 2027', items:[
       {c:'Comedor María de Villota', v:45},
       {c:'Inglés', v:38},
-      {c:'Robótica', v:40.50},
+      {c:'Multideporte', v:0},
+      {c:'Rugby', v:32},
       {c:'Minichef', v:19},
       {c:'Natación', v:8.90},
     ]},
   { name:'Febrero 2027', items:[
       {c:'Comedor María de Villota', v:54},
       {c:'Inglés', v:38},
-      {c:'Robótica', v:40.50},
+      {c:'Multideporte', v:0},
+      {c:'Rugby', v:32},
       {c:'Minichef', v:19},
       {c:'Natación', v:8.90},
     ]},
   // 👉 Añade aquí el siguiente mes (Marzo 2027, etc.)
+];
+
+// Gastos puntuales (no mensuales), con checklist de pagado/pendiente (se guarda en este navegador).
+// Añade aquí el siguiente gasto extra.
+const EXTRA_GASTOS = [
+  { id:'equipo-rugby-2026', concept:'Zapatillas, protector bucal y calcetines', v:26.97 },
 ];
 
 function eur(n){
@@ -1148,8 +1177,10 @@ MONTHS.forEach(m=>{
   m.cadaUno = m.total/2;
 });
 
+const extraGastosTotal = EXTRA_GASTOS.reduce((s,e)=>s+e.v,0);
+
 function renderGastos(){
-  const totalCurso = MONTHS.reduce((s,m)=>s+m.total,0);
+  const totalCurso = MONTHS.reduce((s,m)=>s+m.total,0) + extraGastosTotal;
   const media = totalCurso / MONTHS.length;
   document.getElementById('totalCurso').textContent = eur(totalCurso);
   document.getElementById('mediaMensual').textContent = eur(media);
@@ -1180,6 +1211,44 @@ function renderGastos(){
   });
 }
 renderGastos();
+
+// Checklist de pagado/pendiente para EXTRA_GASTOS. Se guarda en este navegador (localStorage).
+const EXTRA_PAID_KEY = 'damianfg-gastos-extra-pagados';
+function getExtraPaidIds(){
+  try{ return new Set(JSON.parse(localStorage.getItem(EXTRA_PAID_KEY)) || []); }
+  catch(e){ return new Set(); }
+}
+function setExtraPaid(id, paid){
+  const ids = getExtraPaidIds();
+  if(paid) ids.add(id); else ids.delete(id);
+  try{ localStorage.setItem(EXTRA_PAID_KEY, JSON.stringify([...ids])); }catch(e){}
+}
+
+function renderExtraGastos(){
+  const card = document.getElementById('extraGastosCard');
+  const paidIds = getExtraPaidIds();
+  const cadaUno = extraGastosTotal / 2;
+  card.innerHTML = `
+    <ul class="extra-list">
+      ${EXTRA_GASTOS.map(e=>`
+        <li class="extra-item${paidIds.has(e.id) ? ' paid' : ''}">
+          <input type="checkbox" id="extra-${e.id}" data-id="${e.id}" ${paidIds.has(e.id) ? 'checked' : ''}>
+          <label for="extra-${e.id}" class="concept">${e.concept}</label>
+          <span class="amount">${eur(e.v)}</span>
+        </li>`).join('')}
+    </ul>
+    <div class="split-row">
+      <div class="split-pill papa">${eur(cadaUno)}<small>Papá</small></div>
+      <div class="split-pill mama">${eur(cadaUno)}<small>Mamá</small></div>
+    </div>`;
+  card.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      setExtraPaid(cb.dataset.id, cb.checked);
+      renderExtraGastos();
+    });
+  });
+}
+renderExtraGastos();
 
 /* =========================================================
    SECCIÓN 3: CALENDARIO
