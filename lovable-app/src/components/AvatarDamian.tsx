@@ -1,5 +1,34 @@
-/** Avatar dibujado (flat/cartoon) de Damián: pelo castaño claro y rizado, gran sonrisa. */
+import { useEffect, useState } from "react";
+
+/** Ruta de la foto real de Damián dentro de public/. Sube el archivo ahí con este nombre. */
+const FOTO_SRC = "/damian.jpg";
+
+/**
+ * Avatar de Damián: usa la foto real (public/damian.jpg) si existe.
+ * El servidor siempre dibuja el cartoon (para que SSR e hidratación coincidan); una vez
+ * en el cliente, comprobamos si la foto carga y, si es así, la cambiamos. Así evitamos
+ * depender de `onError` en el <img>, que puede perderse por una carrera con la hidratación
+ * cuando el archivo falta y el 404 llega casi al instante.
+ */
 export function AvatarDamian({ className = "" }: { className?: string }) {
+  const [fotoLista, setFotoLista] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+    const img = new window.Image();
+    img.onload = () => {
+      if (!cancelado) setFotoLista(true);
+    };
+    img.src = FOTO_SRC;
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  if (fotoLista) {
+    return <img src={FOTO_SRC} alt="Damián" className={`${className} object-cover`} />;
+  }
+
   return (
     <svg
       viewBox="0 0 120 120"
@@ -40,8 +69,20 @@ export function AvatarDamian({ className = "" }: { className?: string }) {
           <circle cx="78" cy="33" r="5" fill="#C08A50" />
         </g>
         {/* cejas */}
-        <path d="M45 48q5-4 10 0" stroke="#8D5E2E" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M65 48q5-4 10 0" stroke="#8D5E2E" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+        <path
+          d="M45 48q5-4 10 0"
+          stroke="#8D5E2E"
+          strokeWidth="2.5"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M65 48q5-4 10 0"
+          stroke="#8D5E2E"
+          strokeWidth="2.5"
+          fill="none"
+          strokeLinecap="round"
+        />
         {/* ojos sonrientes */}
         <circle cx="50" cy="56" r="3.2" fill="#3B2A20" />
         <circle cx="70" cy="56" r="3.2" fill="#3B2A20" />

@@ -1,8 +1,19 @@
-import { esFinDeSemana } from "./fechas";
+import type { ExcepcionCustodia } from "@/lib/custodiaExcepciones";
+import { aFechaISO, esFinDeSemana } from "./fechas";
 
 export type Progenitor = "papa" | "mama";
 
 export const NOMBRE: Record<Progenitor, string> = { papa: "Papá", mama: "Mamá" };
+const DESDE_NOMBRE: Record<string, Progenitor> = { Papá: "papa", Mamá: "mama" };
+
+/** Excepción (si la hay) para el día de `fecha`, de una lista ya cargada */
+export function excepcionEnFecha(
+  excepciones: ExcepcionCustodia[],
+  fecha: Date,
+): ExcepcionCustodia | undefined {
+  const iso = aFechaISO(fecha);
+  return excepciones.find((e) => e.fecha === iso);
+}
 
 /** Hora (24h) a la que se produce el cambio los días 1 y 16 */
 export const HORA_CAMBIO = 14;
@@ -19,6 +30,16 @@ export function quienTiene(fecha: Date): Progenitor {
   if (d === 1) return tarde ? "papa" : "mama";
   if (d === 16) return tarde ? "mama" : "papa";
   return d < 16 ? "papa" : "mama";
+}
+
+/** Igual que `quienTiene`, pero una excepción de mutuo acuerdo para ese día la sustituye (día completo) */
+export function quienTieneConExcepciones(
+  fecha: Date,
+  excepciones: ExcepcionCustodia[],
+): Progenitor {
+  const exc = excepcionEnFecha(excepciones, fecha);
+  if (exc) return DESDE_NOMBRE[exc.quien] ?? quienTiene(fecha);
+  return quienTiene(fecha);
 }
 
 export const esDiaDeCambio = (dia: number) => dia === 1 || dia === 16;

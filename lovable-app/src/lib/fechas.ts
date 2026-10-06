@@ -34,6 +34,16 @@ export const mismoDia = (a: Date, b: Date) =>
 
 export const soloFecha = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
+/** "YYYY-MM-DD" en hora LOCAL (nunca usar toISOString: desplaza el día según la zona horaria) */
+export const aFechaISO = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/** Parsea "YYYY-MM-DD" como fecha LOCAL a medianoche (nunca `new Date(str)`: lo interpreta en UTC) */
+export const deFechaISO = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+};
+
 export const diasEntre = (desde: Date, hasta: Date) =>
   Math.round((soloFecha(hasta).getTime() - soloFecha(desde).getTime()) / 86_400_000);
 

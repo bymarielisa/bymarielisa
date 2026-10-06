@@ -6,11 +6,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tarjeta, TituloSeccion } from "@/components/Tarjeta";
-import { HorarioClase } from "@/components/HorarioClase";
 import { useNow } from "@/hooks/use-now";
 import { COLEGIO, HORARIO_SEMANAL } from "@/data/horario";
-import { CLASE_ASIGNATURAS } from "@/data/horarioClase";
+import { CLASE_ASIGNATURAS, type Asignatura, type ClaveAsignatura } from "@/data/horarioClase";
 import {
   actividadFueraDelColeHoy,
   aplicanExtraescolares,
@@ -19,7 +19,6 @@ import {
   estadoAhora,
   type Bloque,
 } from "@/lib/horario";
-import { asignaturaAhora } from "@/lib/horarioClase";
 import { formatoHora } from "@/lib/fechas";
 
 export const Route = createFileRoute("/")({
@@ -43,6 +42,7 @@ export const Route = createFileRoute("/")({
 
 const TONO_BLOQUE: Record<Bloque["tipo"], string> = {
   entrada: "bg-sky-soft text-sky-foreground",
+  asignatura: "", // color propio por asignatura, ver COLOR_CHIP
   clase: "bg-sun-soft text-sun-foreground",
   recreo: "bg-leaf-soft text-leaf-foreground",
   comedor: "bg-coral-soft text-foreground",
@@ -55,6 +55,17 @@ const TONO_BLOQUE: Record<Bloque["tipo"], string> = {
   "fuera-del-cole": "bg-sky-soft text-sky-foreground",
 };
 
+const COLOR_CHIP: Record<Asignatura["color"], string> = {
+  sky: "bg-sky text-sky-foreground",
+  sun: "bg-sun text-sun-foreground",
+  coral: "bg-coral text-coral-foreground",
+  leaf: "bg-leaf text-leaf-foreground",
+  lilac: "bg-lilac text-lilac-foreground",
+  teal: "bg-teal text-teal-foreground",
+  orange: "bg-orange text-orange-foreground",
+  sand: "bg-sand text-sand-foreground",
+};
+
 const hora = (h: string) => h.replace(/^0/, "");
 
 function HorarioPage() {
@@ -62,7 +73,6 @@ function HorarioPage() {
   return (
     <>
       <TarjetaAhora now={now} />
-      <HorarioClase now={now} />
       <ListaSemanal now={now} />
     </>
   );
@@ -78,8 +88,6 @@ function TarjetaAhora({ now }: { now: Date | null }) {
     );
   }
   const estado = estadoAhora(now);
-  const claveClase = asignaturaAhora(now);
-  const claseAhora = claveClase && claveClase !== "PATIO" ? CLASE_ASIGNATURAS[claveClase] : null;
   return (
     <Tarjeta className="bg-damian">
       <div className="flex items-center justify-between">
@@ -100,11 +108,6 @@ function TarjetaAhora({ now }: { now: Date | null }) {
             </p>
           )}
           {estado.detalle && <p className="text-sm opacity-90">{estado.detalle}</p>}
-          {claseAhora && (
-            <p className="mt-1 text-sm font-bold opacity-90">
-              En clase toca: {claseAhora.icono} {claseAhora.nombre}
-            </p>
-          )}
           {estado.siguiente && (
             <p className="mt-1 text-xs font-bold opacity-80">
               Después: {estado.siguiente.titulo} ({hora(estado.siguiente.inicio)})
@@ -122,9 +125,12 @@ function ListaSemanal({ now }: { now: Date | null }) {
   const mes0 = fecha.getMonth();
   const hoyDia = now ? now.getDay() : 0;
   const [abierto, setAbierto] = useState<string>("");
+  const [asignaturaAbierta, setAsignaturaAbierta] = useState<ClaveAsignatura | null>(null);
   useEffect(() => {
     if (now) setAbierto(String(now.getDay()));
   }, [now === null]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const detalleAsignatura = asignaturaAbierta ? CLASE_ASIGNATURAS[asignaturaAbierta] : null;
 
   return (
     <Tarjeta>
@@ -181,15 +187,13 @@ function ListaSemanal({ now }: { now: Date | null }) {
               </AccordionTrigger>
               <AccordionContent className="px-2 pb-2">
                 <ol className="relative ml-3 space-y-2 border-l-2 border-dashed border-border pl-5">
-                  {bloques.map((b, i) => (
-                    <li key={i} className="relative">
-                      <span
-                        className={`absolute -left-[31px] top-2 flex size-6 items-center justify-center rounded-full text-sm ${TONO_BLOQUE[b.tipo]}`}
-                        aria-hidden
-                      >
-                        {b.icono}
-                      </span>
-                      <div className={`rounded-2xl px-3 py-2 ${TONO_BLOQUE[b.tipo]}`}>
+                  {bloques.map((b, i) => {
+                    const esAsignatura = b.tipo === "asignatura" && b.asignatura;
+                    const tono = esAsignatura
+                      ? COLOR_CHIP[CLASE_ASIGNATURAS[b.asignatura as ClaveAsignatura].color]
+                      : TONO_BLOQUE[b.tipo];
+                    const contenido = (
+                      <>
                         <div className="flex items-baseline justify-between gap-2">
                           <p className="font-display font-bold">{b.titulo}</p>
                           <p className="shrink-0 text-xs font-extrabold tabular-nums">
@@ -199,15 +203,67 @@ function ListaSemanal({ now }: { now: Date | null }) {
                           </p>
                         </div>
                         {b.detalle && <p className="text-xs opacity-80">{b.detalle}</p>}
-                      </div>
-                    </li>
-                  ))}
+                      </>
+                    );
+                    return (
+                      <li key={i} className="relative">
+                        <span
+                          className={`absolute -left-[31px] top-2 flex size-6 items-center justify-center rounded-full text-sm ${tono}`}
+                          aria-hidden
+                        >
+                          {b.icono}
+                        </span>
+                        {esAsignatura ? (
+                          <button
+                            type="button"
+                            onClick={() => setAsignaturaAbierta(b.asignatura ?? null)}
+                            className={`w-full rounded-2xl px-3 py-2 text-left ${tono}`}
+                          >
+                            {contenido}
+                          </button>
+                        ) : (
+                          <div className={`rounded-2xl px-3 py-2 ${tono}`}>{contenido}</div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ol>
               </AccordionContent>
             </AccordionItem>
           );
         })}
       </Accordion>
+
+      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+        Las áreas son las del currículo oficial de Infantil (LOMLOE). En clase se trabajan de forma
+        global: el horario marca el foco de cada franja.
+      </p>
+
+      <Sheet
+        open={detalleAsignatura !== null}
+        onOpenChange={(open) => !open && setAsignaturaAbierta(null)}
+      >
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          {detalleAsignatura && (
+            <>
+              <SheetHeader className="items-start text-left">
+                <span className="text-4xl" aria-hidden>
+                  {detalleAsignatura.icono}
+                </span>
+                <SheetTitle className="font-display text-xl">
+                  {detalleAsignatura.etiqueta}
+                </SheetTitle>
+              </SheetHeader>
+              {detalleAsignatura.profe && (
+                <p className="text-sm font-bold text-muted-foreground">
+                  Imparte: {detalleAsignatura.profe}
+                </p>
+              )}
+              <p className="mt-2 text-sm leading-relaxed">{detalleAsignatura.descripcion}</p>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </Tarjeta>
   );
 }

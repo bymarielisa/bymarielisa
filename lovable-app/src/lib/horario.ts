@@ -1,8 +1,16 @@
 import { HORARIO_SEMANAL, type ActividadFueraDelCole, type DiaHorario } from "@/data/horario";
+import {
+  CLASE_ASIGNATURAS,
+  CLASE_FRANJAS_HORAS,
+  CLASE_HORARIO,
+  type ClaveAsignatura,
+  type FranjaClase,
+} from "@/data/horarioClase";
 import { minutosDelDia, parseHora } from "./fechas";
 
 export type TipoBloque =
   | "entrada"
+  | "asignatura"
   | "clase"
   | "recreo"
   | "comedor"
@@ -21,6 +29,8 @@ export interface Bloque {
   fin: string; // "HH:MM"
   detalle?: string;
   icono: string;
+  /** Solo en bloques tipo "asignatura": qué asignatura es (para color y ficha de detalle) */
+  asignatura?: ClaveAsignatura;
 }
 
 /** Septiembre (8) y junio (5) tienen la tarde adelantada */
@@ -47,32 +57,63 @@ export function actividadFueraDelColeHoy(
   return act;
 }
 
-/** Construye la línea de tiempo completa de un día lectivo según la fecha */
+/** Bloque de la franja de asignatura `index` (0-6) del horario de clase de un día, o undefined si faltan datos */
+function bloqueAsignatura(franjas: FranjaClase[], index: number): Bloque | undefined {
+  const franja = franjas[index];
+  const horaFin = CLASE_FRANJAS_HORAS[index + 1];
+  if (!franja || !horaFin) return undefined;
+  const asig = CLASE_ASIGNATURAS[franja.asignatura];
+  return {
+    tipo: "asignatura",
+    titulo: asig.nombre,
+    inicio: franja.hora,
+    fin: horaFin,
+    icono: asig.icono,
+    asignatura: franja.asignatura,
+  };
+}
+
+/**
+ * Construye la línea de tiempo completa de un día lectivo según la fecha: entrada, las
+ * asignaturas concretas del horario de clase (de octubre a mayo — en septiembre/junio,
+ * con la tarde adelantada, no tenemos el horario oficial comprimido así que se muestra
+ * "Clases" genérico), recreo, comedor, extraescolar y, si toca, la actividad fuera del cole.
+ */
 export function bloquesDelDia(dia: DiaHorario, fecha: Date): Bloque[] {
   const mes0 = fecha.getMonth();
   const corta = esJornadaCorta(mes0);
   const extras = aplicanExtraescolares(mes0);
   const actividad = extras ? actividadFueraDelColeHoy(dia, fecha) : undefined;
+  const franjas = CLASE_HORARIO[dia.dia];
 
   const b: Bloque[] = [
     {
       tipo: "entrada",
       titulo: "Entrada y acogida",
       inicio: "08:55",
-      fin: "09:30",
+      fin: "09:00",
       detalle: "Puerta a las 8:55 · acogida hasta las 9:05",
       icono: "🎒",
     },
-    { tipo: "clase", titulo: "Clases", inicio: "09:30", fin: "11:15", icono: "✏️" },
-    {
-      tipo: "recreo",
-      titulo: "Recreo y merienda",
-      inicio: "11:15",
-      fin: "11:45",
-      detalle: `Merienda de hoy: ${dia.merienda}`,
-      icono: "🍎",
-    },
   ];
+
+  if (!corta) {
+    for (let i = 0; i < 3; i++) {
+      const bloque = bloqueAsignatura(franjas, i);
+      if (bloque) b.push(bloque);
+    }
+  } else {
+    b.push({ tipo: "clase", titulo: "Clases", inicio: "09:30", fin: "11:15", icono: "✏️" });
+  }
+
+  b.push({
+    tipo: "recreo",
+    titulo: "Recreo y merienda",
+    inicio: "11:15",
+    fin: "11:45",
+    detalle: `Merienda de hoy: ${dia.merienda}`,
+    icono: "🍎",
+  });
 
   if (corta) {
     b.push(
@@ -81,13 +122,7 @@ export function bloquesDelDia(dia: DiaHorario, fecha: Date): Bloque[] {
     );
     if (extras) {
       b.push(
-        {
-          tipo: "tardes",
-          titulo: "Tardes de cole",
-          inicio: "13:40",
-          fin: "16:00",
-          icono: "🧩",
-        },
+        { tipo: "tardes", titulo: "Tardes de cole", inicio: "13:40", fin: "16:00", icono: "🧩" },
         {
           tipo: "extraescolar",
           titulo: `Extraescolar: ${dia.extraescolar}`,
@@ -107,8 +142,11 @@ export function bloquesDelDia(dia: DiaHorario, fecha: Date): Bloque[] {
       });
     }
   } else {
+    for (let i = 4; i < 7; i++) {
+      const bloque = bloqueAsignatura(franjas, i);
+      if (bloque) b.push(bloque);
+    }
     b.push(
-      { tipo: "clase", titulo: "Clases", inicio: "11:45", fin: "14:00", icono: "📚" },
       { tipo: "comedor", titulo: "Comedor", inicio: "14:05", fin: "14:40", icono: "🍽️" },
       {
         tipo: "juegos",
