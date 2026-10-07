@@ -268,10 +268,15 @@ function RecordatoriosFamilia({
 
       <div className="mt-3 space-y-2">
         <Input placeholder="¿Qué es?" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-        <div className="grid grid-cols-2 gap-2">
-          <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            className="w-full"
+          />
           <Select value={autor} onValueChange={(v) => setAutor(v as AutorRecordatorio)}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

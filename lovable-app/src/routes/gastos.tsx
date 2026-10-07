@@ -298,7 +298,7 @@ function AnadirCambioGasto({
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
         />
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Input
             type="number"
             inputMode="decimal"
@@ -307,9 +307,10 @@ function AnadirCambioGasto({
             placeholder="Importe €"
             value={importe}
             onChange={(e) => setImporte(e.target.value)}
+            className="w-full"
           />
           <Select value={autor} onValueChange={(v) => setAutor(v as AutorGasto)}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

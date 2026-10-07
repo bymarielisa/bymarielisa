@@ -137,10 +137,6 @@ function CustodiaPage() {
                   <li className="rounded-2xl bg-coral-soft px-3 py-2">
                     <b>Día 16 (tarde) → día 1 (mañana):</b> con Mamá
                   </li>
-                  <li className="px-3 text-xs text-muted-foreground">
-                    Los cambios se hacen en el colegio a las 14:00 (después del comedor), de lunes a
-                    viernes. ⚠ Si el 1 o el 16 cae en fin de semana, la hora es variable.
-                  </li>
                 </ul>
               )}
             />
@@ -253,8 +249,8 @@ function ExcepcionesCustodia({
       </p>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="min-w-0">
             <Label htmlFor="exc-fecha" className="text-xs">
               Día
             </Label>
@@ -263,14 +259,15 @@ function ExcepcionesCustodia({
               type="date"
               value={fecha}
               onChange={(e) => setFecha(e.target.value)}
+              className="w-full"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <Label htmlFor="exc-quien" className="text-xs">
               Con quién
             </Label>
             <Select value={quien} onValueChange={(v) => setQuien(v as QuienCustodia)}>
-              <SelectTrigger id="exc-quien">
+              <SelectTrigger id="exc-quien" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
