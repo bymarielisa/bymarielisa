@@ -4,8 +4,12 @@
 //
 // La contraseña vive en la variable de entorno APP_PASSWORD de Netlify (no en el código).
 // El usuario del diálogo de login no importa, solo la contraseña.
+declare const Netlify: { env: { get(key: string): string | undefined } };
+
 export default async (request: Request) => {
-  const clave = Deno.env.get("APP_PASSWORD");
+  // Netlify.env es la forma documentada de leer variables de entorno en Edge Functions;
+  // Deno.env.get no las ve ahí (son runtimes aislados distintos).
+  const clave = Netlify.env.get("APP_PASSWORD");
   if (!clave) {
     // Si no hay contraseña configurada, dejamos pasar para no bloquear el sitio por error.
     return;
