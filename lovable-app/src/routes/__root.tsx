@@ -7,12 +7,15 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppHeader } from "../components/AppHeader";
 import { BottomNav } from "../components/BottomNav";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { iniciarSesion, verificarSesion } from "../lib/auth";
 
 function NotFoundComponent() {
   return (
@@ -75,6 +78,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: async () => {
+    const { autenticado } = await verificarSesion();
+    return { autenticado };
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -136,8 +143,12 @@ function useRegistrarServiceWorker() {
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+  const { queryClient, autenticado } = Route.useRouteContext();
   useRegistrarServiceWorker();
+
+  if (!autenticado) {
+    return <PantallaLogin />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -150,5 +161,61 @@ function RootComponent() {
       </div>
       <BottomNav />
     </QueryClientProvider>
+  );
+}
+
+function PantallaLogin() {
+  const router = useRouter();
+  const [clave, setClave] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(false);
+
+  const entrar = async () => {
+    if (!clave) return;
+    setEnviando(true);
+    setError(false);
+    try {
+      const { ok } = await iniciarSesion({ data: { clave } });
+      if (ok) {
+        await router.invalidate();
+      } else {
+        setError(true);
+        setEnviando(false);
+      }
+    } catch {
+      setError(true);
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-playful px-4">
+      <div className="w-full max-w-sm rounded-3xl bg-card p-6 text-center shadow-sm">
+        <p className="text-4xl" aria-hidden>
+          🔒
+        </p>
+        <h1 className="mt-2 font-display text-xl font-extrabold text-foreground">DamiánFG</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Esta app es privada. Pon la contraseña para entrar.
+        </p>
+        <div className="mt-4 space-y-2">
+          <Input
+            type="password"
+            inputMode="numeric"
+            placeholder="Contraseña"
+            value={clave}
+            onChange={(e) => setClave(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") entrar();
+            }}
+            autoFocus
+          />
+          <Button onClick={entrar} disabled={!clave || enviando} className="w-full">
+            Entrar
+          </Button>
+          {error && <p className="text-xs font-bold text-destructive">Contraseña incorrecta.</p>}
+        </div>
+      </div>
+    </div>
   );
 }
