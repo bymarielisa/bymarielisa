@@ -243,7 +243,7 @@ function ExcepcionesCustodia({
     <Tarjeta>
       <TituloSeccion emoji="🤝">Cambios de mutuo acuerdo</TituloSeccion>
       <p className="mt-1 text-sm text-muted-foreground">
-        La regla de siempre se mantiene; esto es solo para anotar un día concreto en el que quedaron
+        La regla de siempre se mantiene; esto es solo para anotar un día concreto en el que quedamos
         en algo distinto.
       </p>
 

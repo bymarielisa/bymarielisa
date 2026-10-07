@@ -248,8 +248,8 @@ function RecordatoriosFamilia({
     <Tarjeta>
       <TituloSeccion emoji="📌">Recordatorios y citas de Damián</TituloSeccion>
       <p className="mt-1 text-sm text-muted-foreground">
-        Avisos del cole y citas de Damián. Lo que añadan o corrijan se ve automáticamente en ambos
-        celulares.
+        Avisos del cole y citas de Damián. Lo que añadamos o corrijamos se ve automáticamente en
+        ambos celulares.
       </p>
 
       <div className="mt-3 space-y-2">

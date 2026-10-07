@@ -252,7 +252,7 @@ function GastosExtraYCambios({
       <TituloSeccion emoji="➕">Gastos extra y cambios</TituloSeccion>
       <p className="mt-1 text-sm text-muted-foreground">
         Para un gasto nuevo o distinto (una matrícula, un cambio de mensualidad, algo que
-        compraron). Si lo atan a un mes, se suma a ese mes y se reparte 50/50; si no, queda como
+        compramos). Si lo atamos a un mes, se suma a ese mes y se reparte 50/50; si no, queda como
         gasto suelto.
       </p>
 
