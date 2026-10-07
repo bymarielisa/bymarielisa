@@ -47,27 +47,35 @@
   --color-sky: var(--sky);
   --color-sky-soft: var(--sky-soft);
   --color-sky-foreground: var(--sky-foreground);
+  --color-sky-soft-foreground: var(--sky-soft-foreground);
   --color-sun: var(--sun);
   --color-sun-soft: var(--sun-soft);
   --color-sun-foreground: var(--sun-foreground);
+  --color-sun-soft-foreground: var(--sun-soft-foreground);
   --color-coral: var(--coral);
   --color-coral-soft: var(--coral-soft);
   --color-coral-foreground: var(--coral-foreground);
+  --color-coral-soft-foreground: var(--coral-soft-foreground);
   --color-leaf: var(--leaf);
   --color-leaf-soft: var(--leaf-soft);
   --color-leaf-foreground: var(--leaf-foreground);
+  --color-leaf-soft-foreground: var(--leaf-soft-foreground);
   --color-lilac: var(--lilac);
   --color-lilac-soft: var(--lilac-soft);
   --color-lilac-foreground: var(--lilac-foreground);
+  --color-lilac-soft-foreground: var(--lilac-soft-foreground);
   --color-teal: var(--teal);
   --color-teal-soft: var(--teal-soft);
   --color-teal-foreground: var(--teal-foreground);
+  --color-teal-soft-foreground: var(--teal-soft-foreground);
   --color-orange: var(--orange);
   --color-orange-soft: var(--orange-soft);
   --color-orange-foreground: var(--orange-foreground);
+  --color-orange-soft-foreground: var(--orange-soft-foreground);
   --color-sand: var(--sand);
   --color-sand-soft: var(--sand-soft);
   --color-sand-foreground: var(--sand-foreground);
+  --color-sand-soft-foreground: var(--sand-soft-foreground);
 
   --shadow-card: 0 6px 20px -8px oklch(0.35 0.06 260 / 0.18);
   --shadow-pop: 0 10px 30px -10px oklch(0.35 0.06 260 / 0.28);
@@ -79,28 +87,36 @@
   --sky: oklch(0.794 0.118 239);
   --sky-soft: oklch(0.94 0.04 239);
   --sky-foreground: oklch(0.25 0.06 250);
+  --sky-soft-foreground: oklch(0.25 0.06 250);
   --sun: oklch(0.88 0.135 86);
   --sun-soft: oklch(0.96 0.06 90);
   --sun-foreground: oklch(0.35 0.08 70);
+  --sun-soft-foreground: oklch(0.35 0.08 70);
   --coral: oklch(0.712 0.181 23);
   --coral-soft: oklch(0.94 0.05 23);
   --coral-foreground: oklch(0.99 0.01 23);
+  --coral-soft-foreground: oklch(0.4 0.12 23);
   --leaf: oklch(0.777 0.16 167);
   --leaf-soft: oklch(0.94 0.06 167);
   --leaf-foreground: oklch(0.25 0.06 170);
+  --leaf-soft-foreground: oklch(0.25 0.06 170);
   --lilac: oklch(0.714 0.128 308);
   --lilac-soft: oklch(0.94 0.04 308);
   --lilac-foreground: oklch(0.99 0.01 308);
+  --lilac-soft-foreground: oklch(0.32 0.08 308);
   /* Asignaturas del horario de clase que no tienen hueco en los 5 acentos base */
   --teal: oklch(0.78 0.13 195);
   --teal-soft: oklch(0.94 0.05 195);
   --teal-foreground: oklch(0.25 0.06 195);
+  --teal-soft-foreground: oklch(0.25 0.06 195);
   --orange: oklch(0.78 0.15 55);
   --orange-soft: oklch(0.94 0.06 55);
   --orange-foreground: oklch(0.3 0.08 55);
+  --orange-soft-foreground: oklch(0.3 0.08 55);
   --sand: oklch(0.75 0.07 75);
   --sand-soft: oklch(0.94 0.03 75);
   --sand-foreground: oklch(0.3 0.04 75);
+  --sand-soft-foreground: oklch(0.3 0.04 75);
 
   --background: oklch(0.994 0.008 91.5);
   --foreground: oklch(0.3 0.04 262);
@@ -126,13 +142,21 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --sky-soft: oklch(0.36 0.06 239);
+    --sky-soft-foreground: oklch(0.88 0.05 239);
     --sun-soft: oklch(0.38 0.07 86);
+    --sun-soft-foreground: oklch(0.9 0.06 86);
     --coral-soft: oklch(0.38 0.08 23);
+    --coral-soft-foreground: oklch(0.9 0.05 23);
     --leaf-soft: oklch(0.36 0.07 167);
+    --leaf-soft-foreground: oklch(0.88 0.06 167);
     --lilac-soft: oklch(0.37 0.06 308);
+    --lilac-soft-foreground: oklch(0.88 0.05 308);
     --teal-soft: oklch(0.36 0.06 195);
+    --teal-soft-foreground: oklch(0.88 0.05 195);
     --orange-soft: oklch(0.37 0.07 55);
+    --orange-soft-foreground: oklch(0.88 0.06 55);
     --sand-soft: oklch(0.34 0.04 75);
+    --sand-soft-foreground: oklch(0.85 0.03 75);
 
     --background: oklch(0.2 0.03 265);
     --foreground: oklch(0.96 0.01 90);
@@ -174,6 +198,13 @@
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: -0.01em;
+  }
+
+  /* El selector nativo de fecha/hora del celular debe adaptarse al tema, si no el
+     texto y el ícono del calendario quedan invisibles en modo oscuro. */
+  input[type="date"],
+  input[type="time"] {
+    color-scheme: light dark;
   }
 }
 

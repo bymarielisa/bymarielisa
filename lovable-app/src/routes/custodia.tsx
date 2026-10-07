@@ -79,7 +79,7 @@ function CustodiaPage() {
             <i className="size-3 rounded-full bg-coral" /> Mamá
           </span>
           <span className="flex items-center gap-1">
-            <i className="size-3 rounded-full bg-split-mama-papa" /> Día de cambio (14:00)
+            <i className="size-3 rounded-full bg-split-mama-papa" /> Día de cambio (17:00)
           </span>
           <span className="flex items-center gap-1">🤝 Cambio acordado</span>
         </div>
@@ -131,7 +131,7 @@ function CustodiaPage() {
               }}
               pie={() => (
                 <ul className="mt-4 space-y-1.5 text-sm">
-                  <li className="rounded-2xl bg-sky-soft px-3 py-2 text-sky-foreground">
+                  <li className="rounded-2xl bg-sky-soft px-3 py-2 text-sky-soft-foreground">
                     <b>Día 1 (tarde) → día 16 (mañana):</b> con Papá
                   </li>
                   <li className="rounded-2xl bg-coral-soft px-3 py-2">
@@ -186,7 +186,7 @@ function TarjetaHoy({ now, excepciones }: { now: Date; excepciones: ExcepcionCus
         <p className="text-sm font-bold opacity-90">
           {prox.finDeSemana
             ? "⚠ Cambio en fin de semana, hora variable"
-            : "A las 14:00 en el colegio"}
+            : "A las 17:00 en el colegio"}
         </p>
         <p className="mt-1 text-xs opacity-75">
           (Calculado con la regla fija; no tiene en cuenta cambios acordados que aún no has
@@ -243,9 +243,8 @@ function ExcepcionesCustodia({
     <Tarjeta>
       <TituloSeccion emoji="🤝">Cambios de mutuo acuerdo</TituloSeccion>
       <p className="mt-1 text-sm text-muted-foreground">
-        La regla de siempre se mantiene; esto es solo para anotar un día concreto en el que
-        quedasteis en algo distinto. Lo ve el otro automáticamente, sin que tengas que avisarle
-        aquí.
+        La regla de siempre se mantiene; esto es solo para anotar un día concreto en el que quedaron
+        en algo distinto.
       </p>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">

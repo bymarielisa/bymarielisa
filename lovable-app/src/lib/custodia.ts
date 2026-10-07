@@ -15,8 +15,8 @@ export function excepcionEnFecha(
   return excepciones.find((e) => e.fecha === iso);
 }
 
-/** Hora (24h) a la que se produce el cambio los días 1 y 16 */
-export const HORA_CAMBIO = 14;
+/** Hora (24h) a la que se produce el cambio los días 1 y 16 (cuando D sale del cole) */
+export const HORA_CAMBIO = 17;
 
 /**
  * Regla fija mensual:

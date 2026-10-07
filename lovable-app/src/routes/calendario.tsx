@@ -13,16 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNow } from "@/hooks/use-now";
-import {
-  CUMPLEANOS,
-  FESTIVOS,
-  RECORDATORIOS,
-  type Cumple,
-  type TipoCumple,
-} from "@/data/calendario";
+import { CUMPLEANOS, FESTIVOS, type Cumple, type TipoCumple } from "@/data/calendario";
 import { deFechaISO, diasEntre, formatoCorto } from "@/lib/fechas";
 import {
   addRecordatorioExtra,
+  editarRecordatorioExtra,
   eliminarRecordatorioExtra,
   getRecordatoriosExtra,
   type AutorRecordatorio,
@@ -36,12 +31,12 @@ export const Route = createFileRoute("/calendario")({
       {
         name: "description",
         content:
-          "Recordatorios del cole, cumpleaños cercanos y días no lectivos del curso 2026-2027.",
+          "Recordatorios y citas de Damián, cumpleaños cercanos y días no lectivos del curso 2026-2027.",
       },
       { property: "og:title", content: "Calendario — DamiánFG" },
       {
         property: "og:description",
-        content: "Recordatorios del cole, cumpleaños y días no lectivos.",
+        content: "Recordatorios y citas de Damián, cumpleaños y días no lectivos.",
       },
     ],
   }),
@@ -90,44 +85,10 @@ function CalendarioPage() {
 
   return (
     <>
-      {/* 1. Recordatorios del cole (fijos) */}
-      <Tarjeta>
-        <TituloSeccion emoji="📌">Recordatorios del cole</TituloSeccion>
-        <div className="mt-3 space-y-4">
-          {RECORDATORIOS.map((mes) => (
-            <div key={mes.mes}>
-              <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
-                {mes.mes}
-              </p>
-              <ul className="space-y-2">
-                {mes.items.map((r, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-3 rounded-2xl bg-sun-soft px-3 py-2 text-sun-foreground"
-                  >
-                    <span aria-hidden>🎨</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-display font-bold leading-tight">{r.titulo}</p>
-                      {r.detalle && <p className="text-xs opacity-80">{r.detalle}</p>}
-                    </div>
-                    <span className="shrink-0 rounded-full bg-card/60 px-2 py-0.5 text-xs font-extrabold">
-                      {r.fecha}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </Tarjeta>
-
-      {/* 1b. Recordatorios/citas añadidos por la familia (compartidos) */}
       <RecordatoriosFamilia extra={extra} cargando={cargando} onCambio={setExtra} />
 
-      {/* 2. Cumpleaños cerca (solo si hay alguno en ≤ 14 días) */}
       {now && <CumplesCerca hoy={now} />}
 
-      {/* 3. Días no lectivos */}
       <Tarjeta>
         <TituloSeccion emoji="🎈">Días no lectivos</TituloSeccion>
         <div className="mt-3">
@@ -223,6 +184,7 @@ function RecordatoriosFamilia({
   cargando: boolean;
   onCambio: (r: RecordatorioExtra[]) => void;
 }) {
+  const [editId, setEditId] = useState<string | null>(null);
   const [titulo, setTitulo] = useState("");
   const [fecha, setFecha] = useState("");
   const [nota, setNota] = useState("");
@@ -230,18 +192,41 @@ function RecordatoriosFamilia({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(false);
 
-  const ordenados = [...extra].sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const conFecha = [...extra]
+    .filter((r) => r.fecha)
+    .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? ""));
+  const sinFecha = [...extra]
+    .filter((r) => !r.fecha)
+    .sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
+  const ordenados = [...conFecha, ...sinFecha];
+
+  const limpiar = () => {
+    setEditId(null);
+    setTitulo("");
+    setFecha("");
+    setNota("");
+    setAutor("Papá");
+  };
+
+  const editar = (r: RecordatorioExtra) => {
+    setEditId(r.id);
+    setTitulo(r.titulo);
+    setFecha(r.fecha ?? "");
+    setNota(r.nota);
+    setAutor(r.autor);
+  };
 
   const enviar = async () => {
-    if (!titulo.trim() || !fecha) return;
+    if (!titulo.trim()) return;
     setEnviando(true);
     setError(false);
+    const datos = { titulo, fecha: fecha || null, nota, autor };
     try {
-      const siguiente = await addRecordatorioExtra({ data: { titulo, fecha, nota, autor } });
+      const siguiente = editId
+        ? await editarRecordatorioExtra({ data: { id: editId, ...datos } })
+        : await addRecordatorioExtra({ data: datos });
       onCambio(siguiente);
-      setTitulo("");
-      setFecha("");
-      setNota("");
+      limpiar();
     } catch {
       setError(true);
     } finally {
@@ -253,6 +238,7 @@ function RecordatoriosFamilia({
     try {
       const siguiente = await eliminarRecordatorioExtra({ data: { id } });
       onCambio(siguiente);
+      if (editId === id) limpiar();
     } catch {
       setError(true);
     }
@@ -260,30 +246,42 @@ function RecordatoriosFamilia({
 
   return (
     <Tarjeta>
-      <TituloSeccion emoji="📝">Tus recordatorios y citas</TituloSeccion>
+      <TituloSeccion emoji="📌">Recordatorios y citas de Damián</TituloSeccion>
       <p className="mt-1 text-sm text-muted-foreground">
-        Para citas de Damián o cualquier fecha que ya sepáis — lo que añada uno lo ve el otro
-        automáticamente, sin tener que pedírmelo.
+        Avisos del cole y citas de Damián. Lo que añadan o corrijan se ve automáticamente en ambos
+        celulares.
       </p>
 
       <div className="mt-3 space-y-2">
         <Input placeholder="¿Qué es?" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Input
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            className="w-full"
-          />
-          <Select value={autor} onValueChange={(v) => setAutor(v as AutorRecordatorio)}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Papá">Lo añade Papá</SelectItem>
-              <SelectItem value="Mamá">Lo añade Mamá</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <Label htmlFor="rec-fecha" className="text-xs">
+              Fecha (si ya se sabe)
+            </Label>
+            <Input
+              id="rec-fecha"
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <Label htmlFor="rec-autor" className="text-xs">
+              Quién avisa
+            </Label>
+            <Select value={autor} onValueChange={(v) => setAutor(v as AutorRecordatorio)}>
+              <SelectTrigger id="rec-autor" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Papá">Papá</SelectItem>
+                <SelectItem value="Mamá">Mamá</SelectItem>
+                <SelectItem value="Cole">El cole</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex gap-2">
           <Input
@@ -291,9 +289,14 @@ function RecordatoriosFamilia({
             value={nota}
             onChange={(e) => setNota(e.target.value)}
           />
-          <Button onClick={enviar} disabled={!titulo.trim() || !fecha || enviando}>
-            Añadir
+          <Button onClick={enviar} disabled={!titulo.trim() || enviando}>
+            {editId ? "Guardar" : "Añadir"}
           </Button>
+          {editId && (
+            <Button type="button" variant="outline" onClick={limpiar} disabled={enviando}>
+              Cancelar
+            </Button>
+          )}
         </div>
         {error && (
           <p className="text-xs font-bold text-destructive">
@@ -307,16 +310,17 @@ function RecordatoriosFamilia({
           {ordenados.map((r) => (
             <li
               key={r.id}
-              className="flex items-start gap-3 rounded-2xl bg-leaf-soft px-3 py-2 text-leaf-foreground"
+              className="flex items-start gap-3 rounded-2xl bg-sun-soft px-3 py-2 text-sun-soft-foreground"
             >
               <span aria-hidden>📍</span>
-              <div className="min-w-0 flex-1">
+              <button type="button" onClick={() => editar(r)} className="min-w-0 flex-1 text-left">
                 <p className="font-display font-bold leading-tight">{r.titulo}</p>
                 <p className="text-xs opacity-80">
-                  {formatoCorto(deFechaISO(r.fecha))} · añadido por {r.autor}
+                  {r.fecha ? formatoCorto(deFechaISO(r.fecha)) : "Fecha por confirmar"} · avisó{" "}
+                  {r.autor}
                   {r.nota && ` · ${r.nota}`}
                 </p>
-              </div>
+              </button>
               <button
                 type="button"
                 onClick={() => borrar(r.id)}

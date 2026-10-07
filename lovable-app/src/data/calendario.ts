@@ -1,46 +1,8 @@
 /**
- * Recordatorios, cumpleaños y días no lectivos del curso 2026-2027.
+ * Cumpleaños y días no lectivos del curso 2026-2027. Los recordatorios y citas de Damián
+ * ahora viven en Netlify Blobs (src/lib/recordatoriosExtra.ts), editables desde la app.
  * Todas las fechas se manejan en hora local (año/mes/día), nunca en UTC.
  */
-
-// ---------- Recordatorios (actividades del cole) ----------
-export interface Recordatorio {
-  titulo: string;
-  fecha: string; // texto libre, p. ej. "30 oct" o "fecha por confirmar"
-  detalle?: string;
-}
-export interface MesRecordatorios {
-  mes: string; // "Octubre 2026"
-  items: Recordatorio[];
-}
-
-export const RECORDATORIOS: MesRecordatorios[] = [
-  {
-    mes: "Octubre 2026",
-    items: [
-      { titulo: "Halloween", fecha: "30 oct", detalle: "Actividad de centro" },
-      {
-        titulo: "Visita al parque (todo Infantil)",
-        fecha: "Finales de octubre",
-        detalle: "Fecha por confirmar",
-      },
-      {
-        titulo: "Cita en la policía (renovar DNI y pasaporte)",
-        fecha: "28 oct",
-        detalle: "11:48",
-      },
-    ],
-  },
-  {
-    mes: "Noviembre 2026",
-    items: [{ titulo: "Salida al Planetario", fecha: "Fecha por confirmar" }],
-  },
-  {
-    mes: "Diciembre 2026",
-    items: [{ titulo: "Festival de Invierno (con familias)", fecha: "17–18 dic" }],
-  },
-  // 👉 Añade aquí el siguiente mes con sus recordatorios
-];
 
 // ---------- Cumpleaños (día/mes, sin año) ----------
 export type TipoCumple = "damian" | "familia" | "amigo";

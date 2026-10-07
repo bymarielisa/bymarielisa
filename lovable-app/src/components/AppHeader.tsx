@@ -15,7 +15,7 @@ export function AppHeader() {
             : "Cargando el día…"}
         </p>
       </div>
-      <span className="ml-auto hidden rounded-full bg-sky-soft px-3 py-1 font-display text-sm font-bold text-sky-foreground sm:inline-flex">
+      <span className="ml-auto hidden rounded-full bg-sky-soft px-3 py-1 font-display text-sm font-bold text-sky-soft-foreground sm:inline-flex">
         DamiánFG
       </span>
     </header>

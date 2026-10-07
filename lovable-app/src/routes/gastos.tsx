@@ -9,6 +9,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -17,49 +18,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tarjeta, TituloSeccion } from "@/components/Tarjeta";
-import { GASTOS, GASTOS_EXTRA, formatEuros, totalGastosExtra, totalMes } from "@/data/gastos";
+import { GASTOS, formatEuros, totalMes } from "@/data/gastos";
 import {
   addGastoExtra,
+  editarGastoExtra,
   eliminarGastoExtra,
   getGastosExtra,
+  marcarGastoPagado,
   type AutorGasto,
   type GastoExtraCompartido,
 } from "@/lib/gastosExtra";
 
-const EXTRA_PAGADOS_KEY = "damianfg-gastos-extra-pagados";
-
-/** Qué gastos extra están marcados como pagados. Se guarda en este navegador (localStorage). */
-function useExtraPagados() {
-  const [pagados, setPagados] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    try {
-      const guardado = localStorage.getItem(EXTRA_PAGADOS_KEY);
-      if (guardado) setPagados(new Set(JSON.parse(guardado) as string[]));
-    } catch {
-      // localStorage no disponible (modo privado, etc.): se ignora y queda sin marcar
-    }
-  }, []);
-
-  const marcar = (id: string, pagado: boolean) => {
-    setPagados((anterior) => {
-      const siguiente = new Set(anterior);
-      if (pagado) siguiente.add(id);
-      else siguiente.delete(id);
-      try {
-        localStorage.setItem(EXTRA_PAGADOS_KEY, JSON.stringify([...siguiente]));
-      } catch {
-        // idem
-      }
-      return siguiente;
-    });
-  };
-
-  return { pagados, marcar };
-}
+const SIN_MES = "sin-mes";
 
 const sumaCambiosMes = (mesId: string, cambios: GastoExtraCompartido[]) =>
   Math.round(cambios.filter((c) => c.mesId === mesId).reduce((s, c) => s + c.importe, 0) * 100) /
+  100;
+
+const sumaGastosSueltos = (cambios: GastoExtraCompartido[]) =>
+  Math.round(cambios.filter((c) => c.mesId === null).reduce((s, c) => s + c.importe, 0) * 100) /
   100;
 
 export const Route = createFileRoute("/gastos")({
@@ -83,20 +60,19 @@ export const Route = createFileRoute("/gastos")({
 
 function GastosPage() {
   const [cambios, setCambios] = useState<GastoExtraCompartido[]>([]);
-  const [cargandoCambios, setCargandoCambios] = useState(true);
+  const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     getGastosExtra()
       .then(setCambios)
       .catch(() => setCambios([]))
-      .finally(() => setCargandoCambios(false));
+      .finally(() => setCargando(false));
   }, []);
 
   const totales = GASTOS.map((mes) => totalMes(mes) + sumaCambiosMes(mes.id, cambios));
-  const extraTotal = totalGastosExtra();
+  const extraTotal = sumaGastosSueltos(cambios);
   const acumulado = totales.reduce((s, t) => s + t, 0) + extraTotal;
   const media = totales.length ? acumulado / totales.length : 0;
-  const { pagados, marcar } = useExtraPagados();
 
   return (
     <>
@@ -108,7 +84,7 @@ function GastosPage() {
               Total acumulado
             </p>
             <p className="font-display text-2xl font-extrabold">{formatEuros(acumulado)}</p>
-            <p className="text-xs opacity-80">{GASTOS.length} meses</p>
+            <p className="text-xs opacity-80">Suma de {GASTOS.length} meses cargados</p>
           </div>
           <div className="rounded-2xl bg-card/40 p-3">
             <p className="text-xs font-extrabold uppercase tracking-wide opacity-80">
@@ -119,8 +95,6 @@ function GastosPage() {
           </div>
         </div>
       </Tarjeta>
-
-      <AnadirCambioGasto cambios={cambios} cargando={cargandoCambios} onCambio={setCambios} />
 
       <Tarjeta>
         <TituloSeccion emoji="🧾">Mes a mes</TituloSeccion>
@@ -152,7 +126,9 @@ function GastosPage() {
                     {cambiosDelMes.map((c) => (
                       <li
                         key={c.id}
-                        className="flex items-center justify-between gap-3 py-2 text-sm text-lilac-foreground"
+                        className={`flex items-center justify-between gap-3 py-2 text-sm text-lilac-soft-foreground ${
+                          c.pagado ? "opacity-60 line-through" : ""
+                        }`}
                       >
                         <span>➕ {c.nombre}</span>
                         <span className="font-bold tabular-nums">{formatEuros(c.importe)}</span>
@@ -164,7 +140,7 @@ function GastosPage() {
                     </li>
                   </ul>
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    <div className="rounded-2xl bg-sky-soft p-3 text-sky-foreground">
+                    <div className="rounded-2xl bg-sky-soft p-3 text-sky-soft-foreground">
                       <p className="text-xs font-extrabold">👨 Papá paga</p>
                       <p className="font-display text-xl font-extrabold tabular-nums">
                         {formatEuros(total / 2)}
@@ -184,48 +160,12 @@ function GastosPage() {
         </Accordion>
       </Tarjeta>
 
-      <Tarjeta>
-        <TituloSeccion emoji="🧦">Gastos extras</TituloSeccion>
-        <ul className="mt-2 divide-y divide-border">
-          {GASTOS_EXTRA.map((gasto) => {
-            const pagado = pagados.has(gasto.id);
-            return (
-              <li key={gasto.id} className="flex items-center gap-3 py-3">
-                <Checkbox
-                  checked={pagado}
-                  onCheckedChange={(valor) => marcar(gasto.id, valor === true)}
-                  aria-label={`Marcar "${gasto.nombre}" como pagado`}
-                />
-                <span
-                  className={`flex-1 text-sm font-semibold ${pagado ? "text-muted-foreground line-through" : ""}`}
-                >
-                  {gasto.nombre}
-                </span>
-                <span className="font-bold tabular-nums">{formatEuros(gasto.importe)}</span>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-sky-soft p-3 text-sky-foreground">
-            <p className="text-xs font-extrabold">👨 Papá paga</p>
-            <p className="font-display text-xl font-extrabold tabular-nums">
-              {formatEuros(extraTotal / 2)}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-coral-soft p-3">
-            <p className="text-xs font-extrabold">👩 Mamá paga</p>
-            <p className="font-display text-xl font-extrabold tabular-nums">
-              {formatEuros(extraTotal / 2)}
-            </p>
-          </div>
-        </div>
-      </Tarjeta>
+      <GastosExtraYCambios cambios={cambios} cargando={cargando} onCambio={setCambios} />
     </>
   );
 }
 
-function AnadirCambioGasto({
+function GastosExtraYCambios({
   cambios,
   cargando,
   onCambio,
@@ -234,27 +174,53 @@ function AnadirCambioGasto({
   cargando: boolean;
   onCambio: (c: GastoExtraCompartido[]) => void;
 }) {
-  const [mesId, setMesId] = useState(GASTOS[GASTOS.length - 1]?.id ?? "");
+  const [editId, setEditId] = useState<string | null>(null);
   const [nombre, setNombre] = useState("");
   const [importe, setImporte] = useState("");
   const [autor, setAutor] = useState<AutorGasto>("Papá");
+  const [mesId, setMesId] = useState<string>(SIN_MES);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(false);
+  const [verPagados, setVerPagados] = useState(false);
 
-  const ordenados = [...cambios].sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
+  const pendientes = [...cambios]
+    .filter((c) => !c.pagado)
+    .sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
+  const pagados = cambios.filter((c) => c.pagado);
+
+  const limpiar = () => {
+    setEditId(null);
+    setNombre("");
+    setImporte("");
+    setAutor("Papá");
+    setMesId(SIN_MES);
+  };
+
+  const editar = (g: GastoExtraCompartido) => {
+    setEditId(g.id);
+    setNombre(g.nombre);
+    setImporte(String(g.importe));
+    setAutor(g.autor);
+    setMesId(g.mesId ?? SIN_MES);
+  };
 
   const enviar = async () => {
     const valor = parseFloat(importe.replace(",", "."));
-    if (!mesId || !nombre.trim() || !Number.isFinite(valor) || valor <= 0) return;
+    if (!nombre.trim() || !Number.isFinite(valor) || valor <= 0) return;
     setEnviando(true);
     setError(false);
+    const datos = {
+      nombre: nombre.trim(),
+      importe: valor,
+      autor,
+      mesId: mesId === SIN_MES ? null : mesId,
+    };
     try {
-      const siguiente = await addGastoExtra({
-        data: { mesId, nombre: nombre.trim(), importe: valor, autor },
-      });
+      const siguiente = editId
+        ? await editarGastoExtra({ data: { id: editId, ...datos } })
+        : await addGastoExtra({ data: datos });
       onCambio(siguiente);
-      setNombre("");
-      setImporte("");
+      limpiar();
     } catch {
       setError(true);
     } finally {
@@ -266,6 +232,16 @@ function AnadirCambioGasto({
     try {
       const siguiente = await eliminarGastoExtra({ data: { id } });
       onCambio(siguiente);
+      if (editId === id) limpiar();
+    } catch {
+      setError(true);
+    }
+  };
+
+  const marcarPagado = async (id: string, pagado: boolean) => {
+    try {
+      const siguiente = await marcarGastoPagado({ data: { id, pagado } });
+      onCambio(siguiente);
     } catch {
       setError(true);
     }
@@ -273,26 +249,14 @@ function AnadirCambioGasto({
 
   return (
     <Tarjeta>
-      <TituloSeccion emoji="➕">Añadir un cambio</TituloSeccion>
+      <TituloSeccion emoji="➕">Gastos extra y cambios</TituloSeccion>
       <p className="mt-1 text-sm text-muted-foreground">
-        Para un gasto nuevo o distinto en un mes (ej. una matrícula o un cambio de mensualidad) — lo
-        que añada uno lo ve el otro automáticamente, sin tener que pedírmelo. Se reparte 50/50 como
-        el resto.
+        Para un gasto nuevo o distinto (una matrícula, un cambio de mensualidad, algo que
+        compraron). Si lo atan a un mes, se suma a ese mes y se reparte 50/50; si no, queda como
+        gasto suelto.
       </p>
 
       <div className="mt-3 space-y-2">
-        <Select value={mesId} onValueChange={setMesId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Mes" />
-          </SelectTrigger>
-          <SelectContent>
-            {GASTOS.map((mes) => (
-              <SelectItem key={mes.id} value={mes.id}>
-                {mes.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Input
           placeholder="¿Qué es? (ej. Matrícula Rugby)"
           value={nombre}
@@ -319,13 +283,33 @@ function AnadirCambioGasto({
             </SelectContent>
           </Select>
         </div>
-        <Button
-          onClick={enviar}
-          disabled={!mesId || !nombre.trim() || !importe || enviando}
-          className="w-full"
-        >
-          Añadir
-        </Button>
+        <Select value={mesId} onValueChange={setMesId}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Mes" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={SIN_MES}>Gasto extra (sin mes)</SelectItem>
+            {GASTOS.map((mes) => (
+              <SelectItem key={mes.id} value={mes.id}>
+                {mes.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex gap-2">
+          <Button
+            onClick={enviar}
+            disabled={!nombre.trim() || !importe || enviando}
+            className="flex-1"
+          >
+            {editId ? "Guardar cambios" : "Añadir"}
+          </Button>
+          {editId && (
+            <Button variant="outline" onClick={limpiar} disabled={enviando}>
+              Cancelar
+            </Button>
+          )}
+        </div>
         {error && (
           <p className="text-xs font-bold text-destructive">
             No se pudo guardar, inténtalo de nuevo en un momento.
@@ -333,18 +317,27 @@ function AnadirCambioGasto({
         )}
       </div>
 
-      {!cargando && ordenados.length > 0 && (
+      {!cargando && pendientes.length > 0 && (
         <ul className="mt-4 space-y-2">
-          {ordenados.map((c) => {
+          {pendientes.map((c) => {
             const mes = GASTOS.find((m) => m.id === c.mesId);
             return (
               <li
                 key={c.id}
-                className="flex items-center justify-between gap-3 rounded-2xl bg-lilac-soft px-3 py-2 text-sm text-lilac-foreground"
+                className="flex items-center gap-2 rounded-2xl bg-lilac-soft px-3 py-2 text-sm text-lilac-soft-foreground"
               >
-                <span className="min-w-0 flex-1">
-                  <b>{c.nombre}</b> · {mes?.nombre ?? c.mesId} · añadido por {c.autor}
-                </span>
+                <Checkbox
+                  checked={c.pagado}
+                  onCheckedChange={(valor) => marcarPagado(c.id, valor === true)}
+                  aria-label={`Marcar "${c.nombre}" como pagado`}
+                />
+                <button
+                  type="button"
+                  onClick={() => editar(c)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <b>{c.nombre}</b> · {mes?.nombre ?? "gasto extra"} · añadido por {c.autor}
+                </button>
                 <span className="shrink-0 font-bold tabular-nums">{formatEuros(c.importe)}</span>
                 <button
                   type="button"
@@ -358,6 +351,51 @@ function AnadirCambioGasto({
             );
           })}
         </ul>
+      )}
+
+      {!cargando && pagados.length > 0 && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setVerPagados((v) => !v)}
+            className="text-xs font-bold text-muted-foreground underline"
+          >
+            {verPagados ? "Ocultar" : "Ver"} ya pagados ({pagados.length})
+          </button>
+          {verPagados && (
+            <ul className="mt-2 space-y-2">
+              {pagados.map((c) => {
+                const mes = GASTOS.find((m) => m.id === c.mesId);
+                return (
+                  <li
+                    key={c.id}
+                    className="flex items-center gap-2 rounded-2xl bg-secondary/60 px-3 py-2 text-sm text-muted-foreground"
+                  >
+                    <Checkbox
+                      checked={c.pagado}
+                      onCheckedChange={(valor) => marcarPagado(c.id, valor === true)}
+                      aria-label={`Marcar "${c.nombre}" como pendiente`}
+                    />
+                    <span className="min-w-0 flex-1 line-through">
+                      {c.nombre} · {mes?.nombre ?? "gasto extra"}
+                    </span>
+                    <span className="shrink-0 font-bold tabular-nums">
+                      {formatEuros(c.importe)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => borrar(c.id)}
+                      className="shrink-0 text-xs font-bold opacity-70 hover:opacity-100"
+                      aria-label="Eliminar"
+                    >
+                      ✕
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       )}
     </Tarjeta>
   );

@@ -41,18 +41,18 @@ export const Route = createFileRoute("/")({
 });
 
 const TONO_BLOQUE: Record<Bloque["tipo"], string> = {
-  entrada: "bg-sky-soft text-sky-foreground",
+  entrada: "bg-sky-soft text-sky-soft-foreground",
   asignatura: "", // color propio por asignatura, ver COLOR_CHIP
-  clase: "bg-sun-soft text-sun-foreground",
-  recreo: "bg-leaf-soft text-leaf-foreground",
+  clase: "bg-sun-soft text-sun-soft-foreground",
+  recreo: "bg-leaf-soft text-leaf-soft-foreground",
   comedor: "bg-coral-soft text-foreground",
   juegos: "bg-lilac-soft text-foreground",
   tardes: "bg-lilac-soft text-foreground",
   recogida: "bg-secondary text-secondary-foreground",
-  extraescolar: "bg-sun-soft text-sun-foreground",
+  extraescolar: "bg-sun-soft text-sun-soft-foreground",
   salida: "bg-secondary text-secondary-foreground",
   camino: "bg-secondary text-secondary-foreground",
-  "fuera-del-cole": "bg-sky-soft text-sky-foreground",
+  "fuera-del-cole": "bg-sky-soft text-sky-soft-foreground",
 };
 
 const COLOR_CHIP: Record<Asignatura["color"], string> = {
@@ -141,7 +141,7 @@ function ListaSemanal({ now }: { now: Date | null }) {
         Tutora: {COLEGIO.tutora} · Inglés: {COLEGIO.ingles}
       </p>
       {esJornadaCorta(mes0) && (
-        <p className="mt-2 rounded-2xl bg-sun-soft px-3 py-2 text-sm font-bold text-sun-foreground">
+        <p className="mt-2 rounded-2xl bg-sun-soft px-3 py-2 text-sm font-bold text-sun-soft-foreground">
           {aplicanExtraescolares(mes0)
             ? "Junio: jornada de tarde adelantada, con extraescolares."
             : "Septiembre: jornada de tarde adelantada, sin extraescolares ni natación hasta octubre."}

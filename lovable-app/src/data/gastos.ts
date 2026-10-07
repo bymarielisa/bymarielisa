@@ -96,24 +96,6 @@ export const GASTOS: MesGastos[] = [
   // 👉 Añade aquí el siguiente mes (Marzo 2027, …)
 ];
 
-/**
- * Gastos puntuales (no mensuales), con checklist de pagado/pendiente.
- * El estado de "pagado" se guarda en este navegador (localStorage), no es compartido.
- * Para añadir el siguiente gasto extra, copia un objeto y cambia id/nombre/importe.
- */
-export interface GastoExtra {
-  id: string;
-  nombre: string;
-  importe: number;
-}
-
-export const GASTOS_EXTRA: GastoExtra[] = [
-  { id: "equipo-rugby-2026", nombre: "Zapatillas, protector bucal y calcetines", importe: 26.97 },
-];
-
-export const totalGastosExtra = () =>
-  Math.round(GASTOS_EXTRA.reduce((s, g) => s + g.importe, 0) * 100) / 100;
-
 export const totalMes = (mes: MesGastos) =>
   Math.round(mes.conceptos.reduce((s, c) => s + c.importe, 0) * 100) / 100;
 

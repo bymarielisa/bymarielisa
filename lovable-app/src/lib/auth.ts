@@ -11,7 +11,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 const COOKIE_NAME = "damianfg_auth";
 const VALOR_SESION = "ok";
-const UN_ANIO = 60 * 60 * 24 * 365;
+const UN_DIA = 60 * 60 * 24;
 
 function firmar(secreto: string): string {
   return createHmac("sha256", secreto).update(VALOR_SESION).digest("hex");
@@ -45,7 +45,7 @@ export const iniciarSesion = createServerFn({ method: "POST" })
       secure: true,
       sameSite: "lax",
       path: "/",
-      maxAge: UN_ANIO,
+      maxAge: UN_DIA,
     });
     return { ok: true };
   });
