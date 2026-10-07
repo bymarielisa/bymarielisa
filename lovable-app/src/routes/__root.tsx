@@ -85,10 +85,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#FFFDF7" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "DamiánFG" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -117,8 +124,20 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Registra el service worker para que el navegador pueda instalar la app en pantalla de inicio. */
+function useRegistrarServiceWorker() {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Si falla, la app sigue funcionando normal como página web
+      });
+    }
+  }, []);
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useRegistrarServiceWorker();
 
   return (
     <QueryClientProvider client={queryClient}>
