@@ -4,6 +4,11 @@
  * sueltos (gastos extra, tipo "zapatillas nuevas"). Cada uno se puede editar, marcar como
  * pagado o eliminar. Se guardan en Netlify Blobs: los ve cualquiera que entre a la app, en
  * cualquier dispositivo, sin necesidad de tocar código.
+ *
+ * Cada gasto es su propia entrada (clave = su id), no un array compartido bajo una sola
+ * clave. Guardarlos juntos bajo una clave causaba que, al añadir varios seguidos rápido, una
+ * escritura leyera la lista antes de que la anterior terminara de guardarse y la pisara sin
+ * querer (se "perdía" uno). Con una clave por gasto eso ya no puede pasar.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { getStore } from "@netlify/blobs";
@@ -21,7 +26,10 @@ export interface GastoExtraCompartido {
 }
 
 const STORE_NAME = "damianfg-gastos-cambios";
-const KEY = "items";
+/** Clave antigua: antes todo se guardaba junto como un array bajo esta clave. */
+const CLAVE_LEGADO = "items";
+/** Marca que ya se sembró el gasto extra fijo (para no repetirlo si se borra). */
+const CLAVE_SEMBRADO = "_sembrado";
 
 /** Lo único que había como gasto extra fijo antes de este sistema compartido. */
 const SEED: GastoExtraCompartido[] = [
@@ -38,9 +46,27 @@ const SEED: GastoExtraCompartido[] = [
 
 async function leerTodos(): Promise<GastoExtraCompartido[]> {
   const store = getStore(STORE_NAME);
-  const data = await store.get(KEY, { type: "json" });
-  if (Array.isArray(data)) return data as GastoExtraCompartido[];
-  await store.setJSON(KEY, SEED);
+  const { blobs } = await store.list();
+  const claves = blobs.map((b) => b.key).filter((k) => k !== CLAVE_LEGADO && k !== CLAVE_SEMBRADO);
+
+  if (claves.length > 0) {
+    const items = await Promise.all(claves.map((k) => store.get(k, { type: "json" })));
+    return items.filter((g): g is GastoExtraCompartido => g != null);
+  }
+
+  // Migración única desde el formato antiguo (array bajo una sola clave).
+  const legado = await store.get(CLAVE_LEGADO, { type: "json" });
+  if (Array.isArray(legado) && legado.length > 0) {
+    await Promise.all(legado.map((g: GastoExtraCompartido) => store.setJSON(g.id, g)));
+    await store.set(CLAVE_SEMBRADO, "1");
+    return legado;
+  }
+
+  // Primera vez de verdad (y solo esa vez): sembramos el gasto extra fijo que había.
+  const yaSembrado = await store.get(CLAVE_SEMBRADO);
+  if (yaSembrado) return [];
+  await Promise.all(SEED.map((g) => store.setJSON(g.id, g)));
+  await store.set(CLAVE_SEMBRADO, "1");
   return SEED;
 }
 
@@ -64,9 +90,8 @@ export const addGastoExtra = createServerFn({ method: "POST" })
       pagado: false,
       creadoEn: new Date().toISOString(),
     };
-    const siguiente = [...actuales, nuevo];
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    await store.setJSON(nuevo.id, nuevo);
+    return [...actuales, nuevo];
   });
 
 export const editarGastoExtra = createServerFn({ method: "POST" })
@@ -82,19 +107,18 @@ export const editarGastoExtra = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<GastoExtraCompartido[]> => {
     const store = getStore(STORE_NAME);
     const actuales = await leerTodos();
-    const siguiente = actuales.map((g) =>
-      g.id === data.id
-        ? {
-            ...g,
-            nombre: data.nombre.trim(),
-            importe: data.importe,
-            autor: data.autor,
-            mesId: data.mesId,
-          }
-        : g,
-    );
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    const existente = actuales.find((g) => g.id === data.id);
+    const actualizado: GastoExtraCompartido = {
+      id: data.id,
+      nombre: data.nombre.trim(),
+      importe: data.importe,
+      autor: data.autor,
+      mesId: data.mesId,
+      pagado: existente?.pagado ?? false,
+      creadoEn: existente?.creadoEn ?? new Date().toISOString(),
+    };
+    await store.setJSON(data.id, actualizado);
+    return actuales.map((g) => (g.id === data.id ? actualizado : g));
   });
 
 export const marcarGastoPagado = createServerFn({ method: "POST" })
@@ -102,9 +126,11 @@ export const marcarGastoPagado = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<GastoExtraCompartido[]> => {
     const store = getStore(STORE_NAME);
     const actuales = await leerTodos();
-    const siguiente = actuales.map((g) => (g.id === data.id ? { ...g, pagado: data.pagado } : g));
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    const existente = actuales.find((g) => g.id === data.id);
+    if (!existente) return actuales;
+    const actualizado = { ...existente, pagado: data.pagado };
+    await store.setJSON(data.id, actualizado);
+    return actuales.map((g) => (g.id === data.id ? actualizado : g));
   });
 
 export const eliminarGastoExtra = createServerFn({ method: "POST" })
@@ -112,7 +138,6 @@ export const eliminarGastoExtra = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<GastoExtraCompartido[]> => {
     const store = getStore(STORE_NAME);
     const actuales = await leerTodos();
-    const siguiente = actuales.filter((g) => g.id !== data.id);
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    await store.delete(data.id);
+    return actuales.filter((g) => g.id !== data.id);
   });

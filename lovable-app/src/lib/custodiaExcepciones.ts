@@ -2,6 +2,11 @@
  * Excepciones puntuales a la regla fija de custodia (cambios de mutuo acuerdo para un
  * día concreto). Se guardan en Netlify Blobs: las ve cualquiera que entre a la app, en
  * cualquier dispositivo, sin necesidad de tocar código.
+ *
+ * Cada excepción es su propia entrada (clave = la fecha), no un array compartido bajo una
+ * sola clave. Guardarlas juntas bajo una clave causaba que, al añadir varios días seguidos
+ * rápido, una escritura leyera la lista antes de que la anterior terminara de guardarse y
+ * la pisara sin querer (se "perdía" un día). Con una clave por fecha eso ya no puede pasar.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { getStore } from "@netlify/blobs";
@@ -9,7 +14,7 @@ import { getStore } from "@netlify/blobs";
 export type QuienCustodia = "Papá" | "Mamá";
 
 export interface ExcepcionCustodia {
-  id: string;
+  id: string; // igual a `fecha`
   fecha: string; // "YYYY-MM-DD"
   quien: QuienCustodia;
   nota: string;
@@ -17,12 +22,31 @@ export interface ExcepcionCustodia {
 }
 
 const STORE_NAME = "damianfg-custodia-excepciones";
-const KEY = "items";
+/** Clave antigua: antes todo se guardaba junto como un array bajo esta clave. */
+const CLAVE_LEGADO = "items";
 
 async function leerTodas(): Promise<ExcepcionCustodia[]> {
   const store = getStore(STORE_NAME);
-  const data = await store.get(KEY, { type: "json" });
-  return Array.isArray(data) ? (data as ExcepcionCustodia[]) : [];
+  const { blobs } = await store.list();
+  const claves = blobs.map((b) => b.key).filter((k) => k !== CLAVE_LEGADO);
+
+  if (claves.length > 0) {
+    const items = await Promise.all(claves.map((k) => store.get(k, { type: "json" })));
+    return items.filter((e): e is ExcepcionCustodia => e != null);
+  }
+
+  // Migración única desde el formato antiguo (array bajo una sola clave).
+  const legado = await store.get(CLAVE_LEGADO, { type: "json" });
+  if (Array.isArray(legado) && legado.length > 0) {
+    const migradas: ExcepcionCustodia[] = legado.map((e: ExcepcionCustodia) => ({
+      ...e,
+      id: e.fecha,
+    }));
+    await Promise.all(migradas.map((e) => store.setJSON(e.fecha, e)));
+    return migradas;
+  }
+
+  return [];
 }
 
 export const getCustodiaExcepciones = createServerFn({ method: "GET" }).handler(
@@ -34,18 +58,16 @@ export const addCustodiaExcepcion = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<ExcepcionCustodia[]> => {
     const store = getStore(STORE_NAME);
     const actuales = await leerTodas();
-    // Una excepción por fecha: si ya había una para ese día, la reemplaza.
-    const sinEsaFecha = actuales.filter((e) => e.fecha !== data.fecha);
     const nueva: ExcepcionCustodia = {
-      id: crypto.randomUUID(),
+      id: data.fecha,
       fecha: data.fecha,
       quien: data.quien,
       nota: data.nota?.trim() ?? "",
       creadoEn: new Date().toISOString(),
     };
-    const siguiente = [...sinEsaFecha, nueva];
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    // Una excepción por fecha: guardar en la misma clave reemplaza la anterior para ese día.
+    await store.setJSON(data.fecha, nueva);
+    return [...actuales.filter((e) => e.fecha !== data.fecha), nueva];
   });
 
 export const eliminarCustodiaExcepcion = createServerFn({ method: "POST" })
@@ -53,7 +75,6 @@ export const eliminarCustodiaExcepcion = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<ExcepcionCustodia[]> => {
     const store = getStore(STORE_NAME);
     const actuales = await leerTodas();
-    const siguiente = actuales.filter((e) => e.id !== data.id);
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    await store.delete(data.id);
+    return actuales.filter((e) => e.id !== data.id);
   });

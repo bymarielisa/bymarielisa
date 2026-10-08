@@ -3,6 +3,11 @@
  * como los que Papá o Mamá añaden sobre la marcha. Todo en una sola lista compartida y
  * editable — si el cole avisa una fecha nueva, se corrige aquí mismo, sin tocar código. Se
  * guarda en Netlify Blobs: lo ve cualquiera que entre a la app, en cualquier dispositivo.
+ *
+ * Cada recordatorio es su propia entrada (clave = su id), no un array compartido bajo una
+ * sola clave. Guardarlos juntos bajo una clave causaba que, al añadir varios seguidos rápido,
+ * una escritura leyera la lista antes de que la anterior terminara de guardarse y la pisara
+ * sin querer (se "perdía" uno). Con una clave por recordatorio eso ya no puede pasar.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { getStore } from "@netlify/blobs";
@@ -19,7 +24,10 @@ export interface RecordatorioExtra {
 }
 
 const STORE_NAME = "damianfg-recordatorios-extra";
-const KEY = "items";
+/** Clave antigua: antes todo se guardaba junto como un array bajo esta clave. */
+const CLAVE_LEGADO = "items";
+/** Marca que ya se sembraron los recordatorios fijos del cole (para no repetirlo si se borran). */
+const CLAVE_SEMBRADO = "_sembrado";
 
 /** Los recordatorios fijos del cole que había antes de este sistema compartido. */
 const SEED: RecordatorioExtra[] = [
@@ -67,9 +75,27 @@ const SEED: RecordatorioExtra[] = [
 
 async function leerTodos(): Promise<RecordatorioExtra[]> {
   const store = getStore(STORE_NAME);
-  const data = await store.get(KEY, { type: "json" });
-  if (Array.isArray(data)) return data as RecordatorioExtra[];
-  await store.setJSON(KEY, SEED);
+  const { blobs } = await store.list();
+  const claves = blobs.map((b) => b.key).filter((k) => k !== CLAVE_LEGADO && k !== CLAVE_SEMBRADO);
+
+  if (claves.length > 0) {
+    const items = await Promise.all(claves.map((k) => store.get(k, { type: "json" })));
+    return items.filter((r): r is RecordatorioExtra => r != null);
+  }
+
+  // Migración única desde el formato antiguo (array bajo una sola clave).
+  const legado = await store.get(CLAVE_LEGADO, { type: "json" });
+  if (Array.isArray(legado) && legado.length > 0) {
+    await Promise.all(legado.map((r: RecordatorioExtra) => store.setJSON(r.id, r)));
+    await store.set(CLAVE_SEMBRADO, "1");
+    return legado;
+  }
+
+  // Primera vez de verdad (y solo esa vez): sembramos los recordatorios fijos del cole.
+  const yaSembrado = await store.get(CLAVE_SEMBRADO);
+  if (yaSembrado) return [];
+  await Promise.all(SEED.map((r) => store.setJSON(r.id, r)));
+  await store.set(CLAVE_SEMBRADO, "1");
   return SEED;
 }
 
@@ -93,9 +119,8 @@ export const addRecordatorioExtra = createServerFn({ method: "POST" })
       autor: data.autor,
       creadoEn: new Date().toISOString(),
     };
-    const siguiente = [...actuales, nuevo];
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    await store.setJSON(nuevo.id, nuevo);
+    return [...actuales, nuevo];
   });
 
 export const editarRecordatorioExtra = createServerFn({ method: "POST" })
@@ -111,19 +136,17 @@ export const editarRecordatorioExtra = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<RecordatorioExtra[]> => {
     const store = getStore(STORE_NAME);
     const actuales = await leerTodos();
-    const siguiente = actuales.map((r) =>
-      r.id === data.id
-        ? {
-            ...r,
-            titulo: data.titulo.trim(),
-            fecha: data.fecha,
-            nota: data.nota?.trim() ?? "",
-            autor: data.autor,
-          }
-        : r,
-    );
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    const existente = actuales.find((r) => r.id === data.id);
+    const actualizado: RecordatorioExtra = {
+      id: data.id,
+      titulo: data.titulo.trim(),
+      fecha: data.fecha,
+      nota: data.nota?.trim() ?? "",
+      autor: data.autor,
+      creadoEn: existente?.creadoEn ?? new Date().toISOString(),
+    };
+    await store.setJSON(data.id, actualizado);
+    return actuales.map((r) => (r.id === data.id ? actualizado : r));
   });
 
 export const eliminarRecordatorioExtra = createServerFn({ method: "POST" })
@@ -131,7 +154,6 @@ export const eliminarRecordatorioExtra = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<RecordatorioExtra[]> => {
     const store = getStore(STORE_NAME);
     const actuales = await leerTodos();
-    const siguiente = actuales.filter((r) => r.id !== data.id);
-    await store.setJSON(KEY, siguiente);
-    return siguiente;
+    await store.delete(data.id);
+    return actuales.filter((r) => r.id !== data.id);
   });
